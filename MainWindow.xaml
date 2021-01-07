@@ -20,16 +20,19 @@
         <!-- raw/complex image -->
         <Grid Grid.Row="0" Grid.Column="0" Background="DodgerBlue" Margin="5">
             <Grid.RowDefinitions>
+                <RowDefinition Height="30" />
                 <RowDefinition Height="250" />
                 <RowDefinition Height="30" />
-                <RowDefinition Height="450" />
+                <RowDefinition Height="420" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="30" />
                 <ColumnDefinition Width="250" />
-                <ColumnDefinition Width="5" />
-                <ColumnDefinition Width="685" />
+                <ColumnDefinition Width="30" />
+                <ColumnDefinition Width="630" />
             </Grid.ColumnDefinitions>
-            <Grid Grid.Row="0" Grid.Column="0">
+
+            <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20" />
                     <RowDefinition Height="5" />
@@ -38,6 +41,7 @@
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="45" />
                 </Grid.ColumnDefinitions>
                 <ComboBox Grid.Row="0" Grid.Column="0" Name="cbULDisplay" SelectedIndex="{Binding nULDisplayIndex}" HorizontalAlignment="Left" Width="201">
                     <ComboBoxItem>raw AlazarTech</ComboBoxItem>
@@ -45,7 +49,10 @@
                     <ComboBoxItem>raw IMAQ</ComboBoxItem>
                     <ComboBoxItem>intensity</ComboBoxItem>
                 </ComboBox>
-                <TabControl Grid.Row="2" Grid.Column="0" Background="Black">
+                <Button Grid.Row="0" Grid.Column="1" Name="btnUpdateUL" Click="btnUpdateUL_Click">
+                    update
+                </Button>
+                <TabControl Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Background="Black">
                     <!-- AlazarTech -->
                     <TabItem>
                         <TabItem.Header>
@@ -84,21 +91,10 @@
                                 <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="5" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="6">reference subtraction</TextBlock>
-                            <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Name="cbULAlazarReference" SelectedIndex="{Binding nULAlazarReferenceIndex}">
-                                <ComboBoxItem>none</ComboBoxItem>
-                                <ComboBoxItem>average</ComboBoxItem>
-                                <ComboBoxItem>record</ComboBoxItem>
-                                <ComboBoxItem>use recorded</ComboBoxItem>
-                            </ComboBox>
-                            <TextBlock Grid.Row="1" Grid.Column="7">depth</TextBlock>
-                            <TextBox Grid.Row="2" Grid.Column="7" Name="txtULAlazarTop" Text="{Binding nULAlazarTop}" />
                             <TextBlock Grid.Row="5" Grid.Column="1" >max</TextBlock>
-                            <TextBox Grid.Row="5" Grid.Column="2" Name="txtULAlazarMax" Text="{Binding dULAlazarMax}" />
+                            <TextBox Grid.Row="5" Grid.Column="2" Name="txtULAlazarMax" Text="{Binding fULAlazarMax}" />
                             <TextBlock Grid.Row="6" Grid.Column="1" >min</TextBlock>
-                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtULAlazarMin" Text="{Binding dULAlazarMin}" />
-                            <TextBlock Grid.Row="9" Grid.Column="1">line</TextBlock>
-                            <TextBox Grid.Row="9" Grid.Column="2" Name="txtULAlazarLeft" Text="{Binding nULAlazarLeft}" />
+                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtULAlazarMin" Text="{Binding fULAlazarMin}" />
                         </Grid>
                     </TabItem>
 
@@ -140,21 +136,10 @@
                                 <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="5" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="6">reference subtraction</TextBlock>
-                            <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Name="cbULDAQReference" SelectedIndex="{Binding nULDAQReferenceIndex}">
-                                <ComboBoxItem>none</ComboBoxItem>
-                                <ComboBoxItem>average</ComboBoxItem>
-                                <ComboBoxItem>record</ComboBoxItem>
-                                <ComboBoxItem>use recorded</ComboBoxItem>
-                            </ComboBox>
-                            <TextBlock Grid.Row="1" Grid.Column="7">depth</TextBlock>
-                            <TextBox Grid.Row="2" Grid.Column="7" Name="txtULDAQTop" Text="{Binding nULDAQTop}" />
                             <TextBlock Grid.Row="5" Grid.Column="1" >max</TextBlock>
-                            <TextBox Grid.Row="5" Grid.Column="2" Name="txtULDAQMax" Text="{Binding dULDAQMax}" />
+                            <TextBox Grid.Row="5" Grid.Column="2" Name="txtULDAQMax" Text="{Binding fULDAQMax}" />
                             <TextBlock Grid.Row="6" Grid.Column="1" >min</TextBlock>
-                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtULDAQMin" Text="{Binding dULDAQMin}" />
-                            <TextBlock Grid.Row="9" Grid.Column="1">line</TextBlock>
-                            <TextBox Grid.Row="9" Grid.Column="2" Name="txtULDAQLeft" Text="{Binding nULDAQLeft}" />
+                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtULDAQMin" Text="{Binding fULDAQMin}" />
                         </Grid>
                     </TabItem>
 
@@ -196,25 +181,15 @@
                                 <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="5" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5">reference subtraction</TextBlock>
-                            <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="5" Name="cbULIMAQReference" SelectedIndex="{Binding nULIMAQReferenceIndex}">
-                                <ComboBoxItem>none</ComboBoxItem>
-                                <ComboBoxItem>average</ComboBoxItem>
-                                <ComboBoxItem>record</ComboBoxItem>
-                                <ComboBoxItem>use recorded</ComboBoxItem>
-                            </ComboBox>
-                            <TextBlock Grid.Row="1" Grid.Column="7">depth</TextBlock>
-                            <TextBox Grid.Row="2" Grid.Column="7" Name="txtULIMAQTop" Text="{Binding nULIMAQTop}" />
                             <TextBlock Grid.Row="4" Grid.Column="1">camera</TextBlock>
                             <ComboBox Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="2" Name="cbULIMAQCamera" SelectedIndex="{Binding nULIMAQCameraIndex}" >
                                 <ComboBoxItem>parallel</ComboBoxItem>
                                 <ComboBoxItem>perpendicular</ComboBoxItem>
+                                <ComboBoxItem>both</ComboBoxItem>
                             </ComboBox>
                             <TextBlock Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" >min / max</TextBlock>
-                            <TextBox Grid.Row="6" Grid.Column="4" Name="txtULIMAQMin" Text="{Binding dULIMAQMin}" />
-                            <TextBox Grid.Row="6" Grid.Column="5" Name="txtULIMAQMax" Text="{Binding dULIMAQMax}" />
-                            <TextBlock Grid.Row="9" Grid.Column="1">line</TextBlock>
-                            <TextBox Grid.Row="9" Grid.Column="2" Name="txtULIMAQLeft" Text="{Binding nULIMAQLeft}" />
+                            <TextBox Grid.Row="6" Grid.Column="4" Name="txtULIMAQMin" Text="{Binding fULIMAQMin}" />
+                            <TextBox Grid.Row="6" Grid.Column="5" Name="txtULIMAQMax" Text="{Binding fULIMAQMax}" />
                         </Grid>
                     </TabItem>
 
@@ -256,20 +231,29 @@
                                 <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="5" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Row="1" Grid.Column="7">depth</TextBlock>
-                            <TextBox Grid.Row="2" Grid.Column="7"  Name="txtULIntensityTop" Text="{Binding nULIntensityTop}" />
+                            <ComboBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Name="cbULIntensityLines" SelectedIndex="{Binding nULIntensityLines}" >
+                                <ComboBoxItem>all</ComboBoxItem>
+                                <ComboBoxItem>even</ComboBoxItem>
+                                <ComboBoxItem>odd</ComboBoxItem>
+                            </ComboBox>
+                            <ComboBox Grid.Row="2" Grid.Column="4" Grid.ColumnSpan="2" Name="cbULIntensityCamera" SelectedIndex="{Binding nULIntensityCamera}" >
+                                <ComboBoxItem>all</ComboBoxItem>
+                                <ComboBoxItem>parallel</ComboBoxItem>
+                                <ComboBoxItem>perpendicular</ComboBoxItem>
+                            </ComboBox>
                             <TextBlock Grid.Row="5" Grid.Column="1" >max</TextBlock>
-                            <TextBox Grid.Row="5" Grid.Column="2" Name="txtULIntensityMax" Text="{Binding dULIntensityMax}" />
+                            <TextBox Grid.Row="5" Grid.Column="2" Name="txtULIntensityMax" Text="{Binding fULIntensityMax}" />
                             <TextBlock Grid.Row="6" Grid.Column="1" >min</TextBlock>
-                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtULIntensityMin" Text="{Binding dULIntensityMin}" />
-                            <TextBlock Grid.Row="9" Grid.Column="1">line</TextBlock>
-                            <TextBox Grid.Row="9" Grid.Column="2" Name="txtULIntensityLeft" Text="{Binding nULIntensityLeft}" />
+                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtULIntensityMin" Text="{Binding fULIntensityMin}" />
                         </Grid>
                     </TabItem>
                 </TabControl>
 
             </Grid>
-            <ni:Graph Grid.Column="0" Name="graphULLeft" Grid.ColumnSpan="3" Margin="-135,110,545,160" Grid.Row="2" >
+
+            <CheckBox Grid.Column="0" Grid.Row="2" Name="chkULLeftActive" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsChecked="{Binding bULLeftActive}" />
+            <TextBox Grid.Row="2" Grid.Column="1" Height="20" Width="50" HorizontalAlignment="Left" VerticalAlignment="Bottom" Name="txtULIMAQLeft" Text="{Binding nULLeft}" />
+            <ni:Graph Grid.Column="1" Name="graphULLeft" RenderMode="Raster" Grid.ColumnSpan="3" Margin="-90,120,590,115" Grid.Row="3" >
                 <ni:Graph.RenderTransform>
                     <RotateTransform Angle="90"/>
                 </ni:Graph.RenderTransform>
@@ -277,34 +261,42 @@
                     <Point X="0.5" Y="0.5" />
                 </ni:Graph.RenderTransformOrigin>
                 <ni:Graph.Axes>
-                    <ni:AxisInt32 Orientation="Horizontal" Adjuster="None" Name="axisULLeftHorizontal" />
-                    <ni:AxisDouble Orientation="Vertical" Adjuster="None" Name="axisULLeftVertical" />
+                    <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Visibility="Collapsed" Adjuster="None" Name="axisULLeftHorizontal" />
+                    <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Visibility="Collapsed" Adjuster="None" Name="axisULLeftVertical" />
                 </ni:Graph.Axes>
             </ni:Graph>
-            <Grid Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*" />
-                    <ColumnDefinition Width="90" />
-                </Grid.ColumnDefinitions>
-                <ni:Graph Grid.Row="0" Grid.Column="0" Name="graphULTop" >
-                    <ni:Graph.Axes>
-                        <ni:AxisInt32 Orientation="Horizontal" Adjuster="None" Name="axisULTopHorizontal" />
-                        <ni:AxisDouble Orientation="Vertical" Adjuster="None" Name="axisULTopVertical" />
-                    </ni:Graph.Axes>
-                </ni:Graph>
-            </Grid>
-            <ni:IntensityGraph Grid.Row="2" Grid.Column="2" Name="graphULMain" RenderMode="Raster" MouseDoubleClick="graphULMain_MouseDoubleClick"  >
-                <!-- Inverts Y-axis-->
+
+            <CheckBox Grid.Column="2" Grid.Row="0" Name="chkULTopActive" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsChecked="{Binding bULTopActive}" />
+            <TextBox Grid.Row="0" Grid.Column="3" Height="20" Width="50" HorizontalAlignment="Left" VerticalAlignment="Bottom" Name="txtULIMAQTop" Text="{Binding nULTop}" />
+            <ni:Graph Grid.Row="1" Grid.Column="3" RenderMode="Raster" Name="graphULTop" >
+                <ni:Graph.Axes>
+                    <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Visibility="Collapsed" Adjuster="None" Name="axisULTopHorizontal" />
+                    <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Visibility="Collapsed" Adjuster="None" Name="axisULTopVertical" />
+                </ni:Graph.Axes>
+            </ni:Graph>
+
+            <!--<Image Name="imageULMain" Grid.Row="2" Grid.Column="2" Stretch="None" >
+            </Image>-->
+
+            <CheckBox Grid.Column="2" Grid.Row="2" Name="chkULMainActive" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsChecked="{Binding bULMainActive}" />
+            <ni:IntensityGraph Grid.Row="3" Grid.Column="3" Name="graphULMain" DataSource="{Binding pfULImage}" RenderMode="Hardware" MouseDoubleClick="graphULMain_MouseDoubleClick"  >
+                <ni:IntensityGraph.Children>
+                    <ni:Cursor Name="cursorULMain" LabelVisibility="Collapsed" CrosshairBrush="Yellow" />
+                </ni:IntensityGraph.Children>
                 <ni:IntensityGraph.VerticalAxis>
-                    <ni:AxisDouble IsInverted="True" Adjuster="FitExactly"/>
+                    <ni:AxisSingle IsInverted="True" MajorGridLines="{x:Null}" Visibility="Collapsed" Name="axisULMainVertical" Adjuster="None" />
                 </ni:IntensityGraph.VerticalAxis >
+                <ni:IntensityGraph.HorizontalAxis>
+                    <ni:AxisSingle Name="axisULMainHorizontal" MajorGridLines="{x:Null}" Visibility="Collapsed" Adjuster="None" />
+                </ni:IntensityGraph.HorizontalAxis>
                 <ni:IntensityGraph.ColorScale>
-                    <ni:ColorScale Location ="Far" LowColor="White" HighColor="Black" >
-                        <ni:ColorScaleMarker Color="White" Value="0"/>
-                        <ni:ColorScaleMarker Color="Black" Value="16384"/>
-                    </ni:ColorScale>
+                    <ni:ColorScaleSingle Name="csULMain" Adjuster="None" Location ="None" LowColor="Blue" HighColor="Red" >
+                        <ni:ColorScaleMarker Color="White" Value="512"/>
+                        <ni:ColorScaleMarker Color="Black" Value="8192"/>
+                    </ni:ColorScaleSingle>
                 </ni:IntensityGraph.ColorScale>
             </ni:IntensityGraph>
+
         </Grid>
 
         <!-- complex/other image -->
@@ -758,7 +750,7 @@
                 </TabControl>
 
             </Grid>
-            <ni:Graph Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="-92,78,592,119" Name="graphURLeft">
+            <ni:Graph Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="-92,78,592,119" RenderMode="Raster" Name="graphURLeft">
                 <ni:Graph.RenderTransform>
                     <RotateTransform Angle="90"/>
                 </ni:Graph.RenderTransform>
@@ -767,7 +759,7 @@
                 </ni:Graph.RenderTransformOrigin>
                 <ni:Graph.Axes>
                     <ni:AxisInt32 Orientation="Horizontal" Adjuster="None" Name="axisURLeftHorizontal" />
-                    <ni:AxisDouble Orientation="Vertical" Adjuster="None" Name="axisURLeftVertical" />
+                    <ni:AxisSingle Orientation="Vertical" Adjuster="None" Name="axisURLeftVertical" />
                 </ni:Graph.Axes>
             </ni:Graph>
             <Grid Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2">
@@ -775,17 +767,17 @@
                     <ColumnDefinition Width="1*" />
                     <ColumnDefinition Width="90" />
                 </Grid.ColumnDefinitions>
-                <ni:Graph Grid.Row="0" Grid.Column="0" Name="graphURTop">
+                <ni:Graph Grid.Row="0" Grid.Column="0" RenderMode="Raster" Name="graphURTop">
                     <ni:Graph.Axes>
                         <ni:AxisInt32 Orientation="Horizontal" Adjuster="None" Name="axisURTopHorizontal" />
-                        <ni:AxisDouble Orientation="Vertical" Adjuster="None" Name="axisURTopVertical" />
+                        <ni:AxisSingle Orientation="Vertical" Adjuster="None" Name="axisURTopVertical" />
                     </ni:Graph.Axes>
                 </ni:Graph>
             </Grid>
             <ni:IntensityGraph Grid.Row="2" Grid.Column="2" Name="graphURMain" RenderMode="Raster" MouseDoubleClick="graphURMain_MouseDoubleClick" >
                 <!-- Inverts Y-axis-->
                 <ni:IntensityGraph.VerticalAxis>
-                    <ni:AxisDouble IsInverted="True" Adjuster="FitExactly"/>
+                    <ni:AxisSingle IsInverted="True" Adjuster="FitExactly"/>
                 </ni:IntensityGraph.VerticalAxis >
                 <ni:IntensityGraph.ColorScale>
                     <ni:ColorScale Location ="Far" LowColor="White" HighColor="Black">
@@ -1019,6 +1011,7 @@
                             <ColumnDefinition Width="55" />
                             <ColumnDefinition Width="55" />
                             <ColumnDefinition Width="5" />
+                            <ColumnDefinition Width="20" />
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
@@ -1036,9 +1029,9 @@
                             <RowDefinition Height="1*" />
                         </Grid.RowDefinitions>
                         <Button Grid.Row="10" Grid.Column="1" Name="btnLRGCCollect" Click="btnLRGCCollect_Click">GB free</Button>
-                        <TextBox Grid.Row="10" Grid.Column="2" Name="txtLRAvailableMemory" Text="{Binding dLRAvailableMemory}" />
+                        <TextBox Grid.Row="10" Grid.Column="2" Name="txtLRAvailableMemory" Text="{Binding fLRAvailableMemory}" />
                         <TextBlock Grid.Row="10" Grid.Column="4">nodes</TextBlock>
-                        <TextBox Grid.Row="10" Grid.Column="5" Name="txtLRLinkedListLength" Text="{Binding nLRLinkedListLength}" />
+                        <TextBox Grid.Row="10" Grid.Column="5" Name="txtLRUIUpdateTime" Text="{Binding fLRUIUpdateTime}" />
                         <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">main thread</TextBlock>
                         <TextBox Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="2" Name="txtLRMainThreadStatus" Text="{Binding strLRMainThreadStatus}" />
                         <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2">7 - output</TextBlock>
@@ -1055,7 +1048,14 @@
                         <TextBox Grid.Row="7" Grid.Column="4" Grid.ColumnSpan="2" Name="txtLRProcess1ThreadStatus" Text="{Binding strLRProcess1ThreadStatus}" />
                         <TextBlock Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2">1 - stage 2/2A</TextBlock>
                         <TextBox Grid.Row="8" Grid.Column="4" Grid.ColumnSpan="2" Name="txtLRProcess2ThreadStatus" Text="{Binding strLRProcess2ThreadStatus}" />
-                        <ni:IntensityGraph Grid.Row="0" Grid.RowSpan="11" Grid.Column="7" Name="graphLRDiagnostics">
+                        <CheckBox Grid.Row="1" Grid.Column="7" Name="chkLRDiagnostics" IsChecked="{Binding bLRDiagnostics}" />
+                        <ni:IntensityGraph Grid.Row="0" Grid.RowSpan="11" Grid.Column="8" RenderMode="Raster" Name="graphLRDiagnostics">
+                            <ni:IntensityGraph.HorizontalAxis>
+                                <ni:AxisSingle MajorGridLines="{x:Null}" Name="axisLRDiagnosticsHorizontal" Adjuster="None" />
+                            </ni:IntensityGraph.HorizontalAxis>
+                            <ni:IntensityGraph.VerticalAxis>
+                                <ni:AxisSingle MajorGridLines="{x:Null}" Name="axisLRDiagnosticsVertical" Adjuster="None" />
+                            </ni:IntensityGraph.VerticalAxis >
                             <ni:IntensityGraph.ColorScale>
                                 <ni:ColorScale Location="None">
                                     <ni:ColorScaleMarker Color="Black" Value="-1" />
@@ -1113,6 +1113,82 @@
                     </Grid>
                 </TabItem>
 
+                <!-- signal output -->
+                <TabItem>
+                    <TabItem.Header>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center">
+                                processing
+                            </TextBlock>
+                        </Grid>
+                    </TabItem.Header>
+                    <Grid Background="DodgerBlue">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180" />
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="1*" />
+                            <ColumnDefinition Width="1*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="1*" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                                <RowDefinition Height="20" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="1*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4">reference</TextBlock>
+                            <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Name="txtLRCalibratioReferenceMethod" SelectedIndex="{Binding nLRReferenceMethod}" >
+                                <ComboBoxItem>none</ComboBoxItem>
+                                <ComboBoxItem>use average</ComboBoxItem>
+                                <ComboBoxItem>record</ComboBoxItem>
+                                <ComboBoxItem>use recorded</ComboBoxItem>
+                            </ComboBox>
+                            <ComboBox Grid.Row="1" Grid.Column="3" Grid.ColumnSpan="2" Name="cbLRCalibrationReferenceDisplay" SelectedIndex="{Binding nLRReferenceDisplay}">
+                                <ComboBoxItem>all</ComboBoxItem>
+                                <ComboBoxItem>parallel even</ComboBoxItem>
+                                <ComboBoxItem>parallel odd</ComboBoxItem>
+                                <ComboBoxItem>perpendicular even</ComboBoxItem>
+                                <ComboBoxItem>perpendicular odd</ComboBoxItem>
+                            </ComboBox>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4">mask left/right/round</TextBlock>
+                            <TextBox Grid.Row="4" Grid.Column="1" Name="txtFFTMaskLeft" Text="{Binding nFFTMaskLeft}" />
+                            <TextBox Grid.Row="4" Grid.Column="2" Name="txtFFTMaskRight" Text="{Binding nFFTMaskRight}" />
+                            <TextBox Grid.Row="4" Grid.Column="3" Name="txtFFTMaskRound" Text="{Binding nFFTMaskRound}" />
+                            <Button Grid.Row="4" Grid.Column="4" Name="btnFFTMaskUpdate" Click="btnFFTMaskUpdate_Click">update</Button>
+                        </Grid>
+                        <CheckBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" Name="chkReferenceActive" IsChecked="{Binding bLRReferenceActive}" />
+                        <ni:Graph Grid.Row="0" Grid.Column="2" Name="graphReference">
+                            <ni:Graph.Axes>
+                                <ni:AxisInt32 Orientation="Horizontal" Adjuster="None" Name="axisReferenceHorizontal" />
+                                <ni:AxisSingle Orientation="Vertical" Adjuster="None" Name="axisReferenceVertical" />
+                            </ni:Graph.Axes>
+                        </ni:Graph>
+                        <ni:Graph Grid.Row="0" Grid.Column="3" />
+                    </Grid>
+                </TabItem>
+
                 <!-- calibration -->
                 <TabItem>
                     <TabItem.Header>
@@ -1130,13 +1206,15 @@
                     </TabItem.Header>
                     <Grid Background="DodgerBlue">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="180" />
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="1*" />
+                            <RowDefinition Height="1*" />
                         </Grid.RowDefinitions>
+                        
                         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="10" />
@@ -1155,26 +1233,56 @@
                                 <ColumnDefinition Width="10" />
                                 <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="10" />
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" />
-                            <Button Grid.Row="2" Grid.Column="1">load</Button>
-                            <Button Grid.Row="2" Grid.Column="2">save</Button>
+                            
+                            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Name="txtCalibrationFile" Text="{Binding strCalibrationFile}" />
+                            <Button Grid.Row="2" Grid.Column="1" Name="btnCalibrationFileLoad" Click="btnCalibrationFileLoad_Click" >load</Button>
+                            <Button Grid.Row="2" Grid.Column="2" Name="btnCalibrationFileSave" Click="btnCalibrationFileSave_Click" >save</Button>
+                            <Button Grid.Row="2" Grid.Column="3" Name="btnCalibrationClear" Click="btnCalibrationClear_Click" >clear</Button>
 
-                            <CheckBox Grid.Row="4" Grid.Column="1">line</CheckBox>
-                            <TextBox Grid.Row="4" Grid.Column="2" />
+                            <CheckBox Grid.Row="4" Grid.Column="1" Name="chkCalibrationActive" IsChecked="{Binding bCalibrationActive}" >active</CheckBox>
 
                             <TextBlock Grid.Row="6" Grid.Column="1">left</TextBlock>
-                            <TextBox Grid.Row="6" Grid.Column="2" />
+                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtCalibrationDepthLeft" Text="{Binding nCalibrationDepthLeft}" />
+                            <TextBox Grid.Row="6" Grid.Column="3" Name="txtCalibrationPhaseLeft" Text="{Binding nCalibrationPhaseLeft}" />
                             <TextBlock Grid.Row="7" Grid.Column="1">right</TextBlock>
-                            <TextBox Grid.Row="7" Grid.Column="2" />
+                            <TextBox Grid.Row="7" Grid.Column="2" Name="txtCalibrationDepthRight" Text="{Binding nCalibrationDepthRight}" />
+                            <TextBox Grid.Row="7" Grid.Column="3" Name="txtCalibrationPhaseRight" Text="{Binding nCalibrationPhaseRight}" />
                             <TextBlock Grid.Row="8" Grid.Column="1">round</TextBlock>
-                            <TextBox Grid.Row="8" Grid.Column="2" />
-                            <TextBlock Grid.Row="9" Grid.Column="1">0x factor</TextBlock>
-                            <TextBox Grid.Row="9" Grid.Column="2" />
+                            <TextBox Grid.Row="8" Grid.Column="2" Name="txtCalibrationDepthRound" Text="{Binding nCalibrationDepthRound}" />
                         </Grid>
-                        <ni:Graph Grid.Row="0" Grid.Column="1" />
-                        <ni:Graph Grid.Row="0" Grid.Column="2" />
+                        
+                        <ni:Graph Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2" Name="graphCalibrationDepthProfile" RenderMode="Raster" >
+                            <ni:Graph.Children>
+                                <ni:Cursor CrosshairBrush="Red" />
+                            </ni:Graph.Children>
+                            <ni:Graph.Axes>
+                                <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Adjuster="None" Name="axisCalibrationDepthHorizontal" />
+                                <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Adjuster="None" Name="axisCalibrationDepthVertical" />
+                            </ni:Graph.Axes>
+                        </ni:Graph>
+                        
+                        <ni:Graph Grid.Row="0" Grid.Column="2" Name="graphCalibrationSpectrum" RenderMode="Raster" >
+                            <ni:Graph.Children>
+                                <ni:Cursor CrosshairBrush="Red" />
+                            </ni:Graph.Children>
+                            <ni:Graph.Axes>
+                                <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Adjuster="None" Name="axisCalibrationSpectrumHorizontal" />
+                                <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Adjuster="None" Name="axisCalibrationSpectrumVertical" />
+                            </ni:Graph.Axes>
+                        </ni:Graph>
+
+                        <ni:Graph Grid.Row="1" Grid.Column="2" Name="graphCalibrationPhase" RenderMode="Raster" >
+                            <ni:Graph.Children>
+                                <ni:Cursor CrosshairBrush="Red" />
+                            </ni:Graph.Children>
+                            <ni:Graph.Axes>
+                                <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Adjuster="None" Name="axisCalibrationPhaseHorizontal" />
+                                <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Adjuster="None" Name="axisCalibrationPhaseVertical" />
+                            </ni:Graph.Axes>
+                        </ni:Graph>
                     </Grid>
                 </TabItem>
 
@@ -1195,13 +1303,15 @@
                     </TabItem.Header>
                     <Grid Background="DodgerBlue">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="180" />
                             <ColumnDefinition Width="1*" />
                             <ColumnDefinition Width="1*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="1*" />
+                            <RowDefinition Height="1*" />
                         </Grid.RowDefinitions>
+
                         <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="10" />
@@ -1220,24 +1330,59 @@
                                 <ColumnDefinition Width="10" />
                                 <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="1*" />
+                                <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="10" />
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" />
-                            <Button Grid.Row="2" Grid.Column="1">load</Button>
-                            <Button Grid.Row="2" Grid.Column="2">save</Button>
 
-                            <CheckBox Grid.Row="4" Grid.Column="1">line</CheckBox>
-                            <TextBox Grid.Row="4" Grid.Column="2" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" Name="txtDispersionFile" Text="{Binding strDispersionFile}" />
+                            <Button Grid.Row="2" Grid.Column="1" Name="btnDispersionFileLoad" Click="btnDispersionFileLoad_Click" >load</Button>
+                            <Button Grid.Row="2" Grid.Column="2" Name="btnDispersionFileSave" Click="btnDispersionFileSave_Click" >save</Button>
+                            <Button Grid.Row="2" Grid.Column="3" Name="btnDispersionClear" Click="btnDispersionClear_Click" >clear</Button>
+
+                            <CheckBox Grid.Row="4" Grid.Column="1" Name="chkDispersionActive" IsChecked="{Binding bDispersionActive}" >active</CheckBox>
+                            <TextBlock Grid.Row="4" Grid.Column="2" HorizontalAlignment="Center">line :</TextBlock>
+                            <TextBox Grid.Row="4" Grid.Column="3" Name="txtDispersionLine" Text="{Binding nDispersionLine}" />
 
                             <TextBlock Grid.Row="6" Grid.Column="1">left</TextBlock>
-                            <TextBox Grid.Row="6" Grid.Column="2" />
+                            <TextBox Grid.Row="6" Grid.Column="2" Name="txtDispersionDepthLeft" Text="{Binding nDispersionDepthLeft}" />
+                            <TextBox Grid.Row="6" Grid.Column="3" Name="txtDispersionPhaseLeft" Text="{Binding nDispersionPhaseLeft}" />
                             <TextBlock Grid.Row="7" Grid.Column="1">right</TextBlock>
-                            <TextBox Grid.Row="7" Grid.Column="2" />
+                            <TextBox Grid.Row="7" Grid.Column="2" Name="txtDispersionDepthRight" Text="{Binding nDispersionDepthRight}" />
+                            <TextBox Grid.Row="7" Grid.Column="3" Name="txtDispersionPhaseRight" Text="{Binding nDispersionPhaseRight}" />
                             <TextBlock Grid.Row="8" Grid.Column="1">round</TextBlock>
-                            <TextBox Grid.Row="8" Grid.Column="2" />
+                            <TextBox Grid.Row="8" Grid.Column="2" Name="txtDispersionDepthRound" Text="{Binding nDispersionDepthRound}" />
                         </Grid>
-                        <ni:Graph Grid.Row="0" Grid.Column="1" />
-                        <ni:Graph Grid.Row="0" Grid.Column="2" />
+
+                        <ni:Graph Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2" Name="graphDispersionDepthProfile" RenderMode="Raster" >
+                            <ni:Graph.Children>
+                                <ni:Cursor CrosshairBrush="Red" />
+                            </ni:Graph.Children>
+                            <ni:Graph.Axes>
+                                <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Adjuster="None" Name="axisDispersionDepthHorizontal" />
+                                <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Adjuster="None" Name="axisDispersionDepthVertical" />
+                            </ni:Graph.Axes>
+                        </ni:Graph>
+
+                        <ni:Graph Grid.Row="0" Grid.Column="2" Name="graphDispersionSpectrum" RenderMode="Raster" >
+                            <ni:Graph.Children>
+                                <ni:Cursor CrosshairBrush="Red" />
+                            </ni:Graph.Children>
+                            <ni:Graph.Axes>
+                                <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Adjuster="None" Name="axisDispersionSpectrumHorizontal" />
+                                <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Adjuster="None" Name="axisDispersionSpectrumVertical" />
+                            </ni:Graph.Axes>
+                        </ni:Graph>
+
+                        <ni:Graph Grid.Row="1" Grid.Column="2" Name="graphDispersionPhase" RenderMode="Raster" >
+                            <ni:Graph.Children>
+                                <ni:Cursor CrosshairBrush="Red" />
+                            </ni:Graph.Children>
+                            <ni:Graph.Axes>
+                                <ni:AxisInt32 Orientation="Horizontal" MajorGridLines="{x:Null}" Adjuster="None" Name="axisDispersionPhaseHorizontal" />
+                                <ni:AxisSingle Orientation="Vertical" MajorGridLines="{x:Null}" Adjuster="None" Name="axisDispersionPhaseVertical" />
+                            </ni:Graph.Axes>
+                        </ni:Graph>
+
                     </Grid>
                 </TabItem>
             </TabControl>

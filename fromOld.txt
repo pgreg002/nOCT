@@ -1,0 +1,667 @@
+﻿
+        void ProcessingThread()
+        {
+            #region initialization
+
+            ThreadData.strProcessingStatus = "initializing";
+
+            #region variables for thread and data node structure
+            // node to process
+            LinkedListNode<CDataNode> nodeProcessing;
+            nodeProcessing = nodeList.First;
+            // set up wait handles for main loop
+            WaitHandle[] pweProcessing = new WaitHandle[2];
+            pweProcessing[0] = ThreadData.mrweProcessingThreadKill;
+            pweProcessing[1] = ThreadData.mrweProcessingThreadRun;
+            // secondary handle array
+            WaitHandle[] pweSecondary = new WaitHandle[2];
+            pweSecondary[0] = ThreadData.sweProcessingThreadTrigger;
+            pweSecondary[1] = ThreadData.mrweProcessingThreadKill;
+            #endregion
+
+            #region structures for quick copy from node
+            // data structures
+            double[] pdLocalDAQ = new double[4 * UIData.nConfigurationChunksPerImage * UIData.nConfigurationLinesPerChunk];
+            Int16[] pnTemp = new Int16[UIData.nConfigurationIMAQLineLength * UIData.nConfigurationLinesPerChunk];
+            Int16[] pnFullImage = new Int16[UIData.nConfigurationIMAQLineLength * UIData.nConfigurationLinesPerChunk * UIData.nConfigurationChunksPerImage];
+            #endregion
+
+            #region basic definitions
+            int nLineLength = UIData.nConfigurationIMAQLineLength;
+            int nZPFactor = UIData.nConfigurationZPFactor;
+            int nNumberLines = UIData.nConfigurationChunksPerImage * UIData.nConfigurationLinesPerChunk;
+            #endregion
+
+            #region calibration and dispersion compensation arrays
+            double[] pdCalibrationZPPoint;
+            pdCalibrationZPPoint = new double[nLineLength * nZPFactor];
+            for (int nPoint = 0; nPoint < nLineLength * nZPFactor; nPoint++)
+                pdCalibrationZPPoint[nPoint] = Convert.ToDouble(nPoint);
+
+            int[] pnCalibrationIndex;
+            pnCalibrationIndex = new int[nLineLength];
+            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                pnCalibrationIndex[nPoint] = nPoint;
+
+            ComplexDouble[] pcdDispersionCorrection;
+            pcdDispersionCorrection = new ComplexDouble[nLineLength];
+            Array.Clear(pcdDispersionCorrection, 0, nLineLength);
+            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                pcdDispersionCorrection[nPoint].Real = 1.0;
+            #endregion
+
+            #region structure to actually do processing
+            int nAline;
+            int nZPLineLength = nLineLength * nZPFactor;
+            double dNumberLines = Convert.ToDouble(nNumberLines);
+            double[] pdArray = new double[nNumberLines * nLineLength];
+            int[] pnArray = new int[nNumberLines * nLineLength];
+            double[] pdReference = new double[nLineLength];
+            double[] pdAcquiredReference = new double[nLineLength];
+            double[] pdLine = new double[nLineLength];
+            double[] pdSum = new double[nLineLength];
+            double[] pdZPSum = new double[nZPLineLength];
+            ComplexDouble[] pcdLine = new ComplexDouble[nLineLength];
+            ComplexDouble[] pcdFFT = new ComplexDouble[nLineLength];
+            ComplexDouble[] pcdZPFFT = new ComplexDouble[nZPLineLength];
+            ComplexDouble[] pcdZPLine = new ComplexDouble[nZPLineLength];
+            ComplexDouble[] pcdCalibrated = new ComplexDouble[nNumberLines * nLineLength];
+            Array.Clear(pdZPSum, 0, nZPLineLength);
+            int nSkipLines;
+            double dLineCount;
+            int nIntensityLine;
+            int nIntensityPoint;
+            int nVariableLine;
+            int nVariablePoint;
+            int nNumberFrames = UIData.nConfigurationImagesPerVolume;
+            int nFrame;
+            ThreadData.nCurrentVariableType = -1;
+            double[] pdPhaseImage = new double[nNumberLines * nLineLength / 2];
+            int nEnFaceMinDepth = -1;
+            int nEnFaceMaxDepth = 0;
+            int nPhaseReferenceDepth = 0;
+            double dPhase, dReference;
+            double[] pdVariablePhase = new double[nNumberLines];
+            #endregion
+
+            // signal that initialization is complete
+            ThreadData.mrweProcessingThreadReady.Set();
+            ThreadData.strProcessingStatus = "initialized";
+
+            #endregion
+
+            // main loop
+            if (WaitHandle.WaitAny(pweProcessing) == 1)
+            {
+                ThreadData.strProcessingStatus = "in main loop";
+
+                // wait for semaphore to be triggered
+                while (WaitHandle.WaitAny(pweSecondary) == 0)
+                {
+                    ThreadData.strProcessingStatus = "semaphore triggered";
+
+                    #region look for most recent node (look until semaphore value equals zero
+                    // look for most recent node (look until semaphore value equals zero)
+                    do
+                    {
+                        ThreadData.strProcessingStatus = "checking";
+                        ThreadData.nProcessingNodeID = nodeProcessing.Value.nID;
+                        nodeProcessing.Value.mut.WaitOne();
+                        nodeProcessing.Value.bProcessed = true;
+                        nodeProcessing.Value.mut.ReleaseMutex();
+                        // move to next node
+                        nodeProcessing = nodeProcessing.Next;
+                        if (nodeProcessing == null)
+                            nodeProcessing = nodeList.First;
+                    }
+                    while (ThreadData.sweProcessingThreadTrigger.WaitOne(0) == true);
+                    // move back one node
+                    nodeProcessing = nodeProcessing.Previous;
+                    if (nodeProcessing == null)
+                        nodeProcessing = nodeList.Last;
+                    #endregion
+
+                    #region copy data from node to local arrays (output: pdLocalDAQ pnFullImage)
+                    // copy data
+                    ThreadData.strProcessingStatus = "copying";
+                    ThreadData.nProcessingNodeID = nodeProcessing.Value.nID;
+                    nodeProcessing.Value.mut.WaitOne();
+                    nFrame = nodeProcessing.Value.nFrameNumber;
+                    Array.Copy(nodeProcessing.Value.pnDAQ, pdLocalDAQ, 4 * UIData.nConfigurationChunksPerImage * UIData.nConfigurationLinesPerChunk);
+                    for (int nChunk = 0; nChunk < UIData.nConfigurationChunksPerImage; nChunk++)
+                    {
+                        Array.Copy(nodeProcessing.Value.pnIMAQ[nChunk], 0, pnFullImage, nChunk * UIData.nConfigurationLinesPerChunk * UIData.nConfigurationIMAQLineLength, UIData.nConfigurationLinesPerChunk * UIData.nConfigurationIMAQLineLength);
+                    }
+                    nodeProcessing.Value.mut.ReleaseMutex();
+                    #endregion
+
+                    ThreadData.strProcessingStatus = "processing";
+
+                    pdArray = pnFullImage.Select(Convert.ToDouble).ToArray();
+
+                    #region copy selected line to spectrum for viewing
+                    // now working with just local arrays
+                    nAline = UIData.nSpectrumLineNumber;
+                    if (nAline != -1)
+                    {
+                        if (nAline < 0)
+                            nAline = 0;
+                        if (nAline >= UIData.nConfigurationChunksPerImage * UIData.nConfigurationLinesPerChunk)
+                            nAline = UIData.nConfigurationChunksPerImage * UIData.nConfigurationLinesPerChunk - 1;
+                        Array.Copy(pdArray, nAline * nLineLength, ThreadData.pdSpectrum, 0, nLineLength);
+                    }
+                    else
+                        Array.Clear(ThreadData.pdSpectrum, 0, 2 * nLineLength);
+                    #endregion
+
+                    nSkipLines = UIData.nSkipLines;
+                    if (nSkipLines < 1)
+                        nSkipLines = 1;
+                    if (nSkipLines > 64)
+                        nSkipLines = 64;
+
+                    // process
+                    if (UIData.bShowIntensity)
+                    {
+
+                        #region reference
+
+                        // calculate reference based on reference type
+                        switch (UIData.nReferenceType)
+                        {
+                            case 0:
+                                // no subtraction
+                                Array.Clear(pdReference, 0, nLineLength);
+                                break;
+                            case 1:
+                                // subtract average
+                                Array.Clear(pdSum, 0, nLineLength);
+                                dLineCount = 0.0;
+                                for (int nLine = 0; nLine < nNumberLines; nLine += nSkipLines)
+                                {
+                                    System.Buffer.BlockCopy(pdArray, nLine * nLineLength * sizeof(double), pdLine, 0, nLineLength * sizeof(double));
+                                    pdSum = (pdSum.Zip(pdLine, (x, y) => x + y)).ToArray();
+                                    dLineCount += 1.0;
+                                }
+                                for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                    pdReference[nPoint] = pdSum[nPoint] / dLineCount;
+                                break;
+                            case 2:
+                                // record reference
+                                Array.Clear(pdSum, 0, nLineLength);
+                                dLineCount = 0.0;
+                                for (int nLine = 0; nLine < nNumberLines; nLine += nSkipLines)
+                                {
+                                    System.Buffer.BlockCopy(pdArray, nLine * nLineLength * sizeof(double), pdLine, 0, nLineLength * sizeof(double));
+                                    pdSum = (pdSum.Zip(pdLine, (x, y) => x + y)).ToArray();
+                                    dLineCount += 1.0;
+                                }
+                                for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                    pdReference[nPoint] = pdSum[nPoint] / dLineCount;
+                                System.Buffer.BlockCopy(pdReference, 0, pdAcquiredReference, 0, nLineLength * sizeof(double));
+                                break;
+                            case 3:
+                                // use recorded ref
+                                System.Buffer.BlockCopy(pdAcquiredReference, 0, pdReference, 0, nLineLength * sizeof(double));
+                                break;
+                            default:
+                                break;
+                        }   // switch (UIData.nReferenceType
+                        // copy reference for display
+                        System.Buffer.BlockCopy(pdReference, 0, ThreadData.pdSpectrum, nLineLength * sizeof(double), nLineLength * sizeof(double));
+
+                        #endregion
+
+                        #region calibration calculation section (output: pdCalibrationZPPoint, pnCalibrationIndex)
+
+                        if (UIData.bCalibrate)
+                        {
+                            // create mask for depth profiles
+                            ComplexDouble[] pcdMask = new ComplexDouble[nLineLength];
+                            Array.Clear(pcdMask, 0, nLineLength);
+                            for (int nPoint = 0; nPoint < UIData.nCalibrationLeft - UIData.nCalibrationRound; nPoint++)
+                                pcdMask[nPoint].Real = 0.0;
+                            for (int nPoint = UIData.nCalibrationLeft - UIData.nCalibrationRound; nPoint < UIData.nCalibrationLeft; nPoint++)
+                                pcdMask[nPoint].Real = 0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(UIData.nCalibrationLeft - nPoint) / Convert.ToDouble(UIData.nCalibrationRound)));
+                            for (int nPoint = UIData.nCalibrationLeft; nPoint < UIData.nCalibrationRight; nPoint++)
+                                pcdMask[nPoint].Real = 1.0;
+                            for (int nPoint = UIData.nCalibrationRight; nPoint < UIData.nCalibrationRight + UIData.nCalibrationRound; nPoint++)
+                                pcdMask[nPoint].Real = 0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(nPoint - UIData.nCalibrationRight) / Convert.ToDouble(UIData.nCalibrationRound)));
+                            for (int nPoint = UIData.nCalibrationRight + UIData.nCalibrationRound; nPoint < nLineLength; nPoint++)
+                                pcdMask[nPoint].Real = 0.0;
+
+                            // initialize calibration calculation arrays
+                            ComplexDouble[] pcdMasked = new ComplexDouble[nZPLineLength];
+                            ComplexDouble[] pcdSpectrum = new ComplexDouble[nZPLineLength];
+                            double[] pdPhase = new double[nZPLineLength];
+                            Array.Clear(pdSum, 0, nLineLength);
+                            pdZPSum = new double[nZPLineLength];
+                            Array.Clear(pdZPSum, 0, nZPLineLength);
+
+                            dLineCount = 0.0;
+                            for (int nLine = 0; nLine < nNumberLines; nLine += nSkipLines)
+                            {
+                                System.Buffer.BlockCopy(pdArray, nLine * nLineLength * sizeof(double), pdLine, 0, nLineLength * sizeof(double));    // copy one line from array
+                                pdLine = (pdLine.Zip(pdReference, (x, y) => x - y)).ToArray();                                                      // subtract reference
+                                pcdFFT = NationalInstruments.Analysis.Dsp.Transforms.RealFft(pdLine);                                               // fft
+                                pdSum = (pdSum.Zip(pcdFFT, (x, y) => x + (y.Magnitude) * (y.Magnitude))).ToArray();                                 // keep running sum of depth profile shape
+                                Array.Clear(pcdMasked, 0, nZPLineLength);                                                                           // cut out peak
+                                for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                    pcdMasked[nPoint] = pcdFFT[nPoint].Multiply(pcdMask[nPoint]);
+                                pcdSpectrum = NationalInstruments.Analysis.Dsp.Transforms.InverseFft(pcdMasked, false);                             // inverse fft
+                                for (int nPoint = 0; nPoint < nZPLineLength; nPoint++)                                                              // calculate phase
+                                    pdPhase[nPoint] = pcdSpectrum[nPoint].Phase;
+                                NationalInstruments.Analysis.Dsp.SignalProcessing.UnwrapPhase(pdPhase);                                             // unwrap phase
+                                pdZPSum = (pdZPSum.Zip(pdPhase, (x, y) => x + y)).ToArray();                                                        // keep running sum of phases
+                                dLineCount += 1.0;
+                            }   // for (int nLine
+
+                            double dMin = pdZPSum[0] / dLineCount;
+                            double dMax = pdZPSum[nZPLineLength - 1] / dLineCount;
+                            //                        axisCalibrationPhaseVertical.Range = new Range<double>(dMin, dMax);
+                            double dSlope = (dMax - dMin) / Convert.ToDouble(nZPLineLength);
+                            for (int nPoint = 0; nPoint < nZPLineLength; nPoint++)
+                            {
+                                ThreadData.pdCalibrationPhase[0, nPoint] = pdZPSum[nPoint] / dLineCount;
+                                ThreadData.pdCalibrationPhase[1, nPoint] = dMin + dSlope * Convert.ToDouble(nPoint);
+                                pdCalibrationZPPoint[nPoint] = Convert.ToDouble(nPoint) + (ThreadData.pdCalibrationPhase[0, nPoint] - ThreadData.pdCalibrationPhase[1, nPoint]) / dSlope;
+                            }   // for (int nPoint
+
+                            // update calibration depth profile graph
+                            for (int nPoint = 0; nPoint < nLineLength / 2; nPoint++)
+                            {
+                                ThreadData.pdCalibrationDepthProfile[0, nPoint] = 10.0 * Math.Log10(pdSum[nPoint] / dLineCount);
+                                ThreadData.pdCalibrationDepthProfile[1, nPoint] = 10.0 * Math.Log10((pcdMask[nPoint].Magnitude) * (pcdMask[nPoint].Magnitude) * (pdSum[nPoint] / dLineCount));
+                            }   // for (int nPoint
+
+                            // calculate interpolation arrays
+                            int nTemp = 0;
+                            pnCalibrationIndex[nTemp] = 0;
+                            pnCalibrationIndex[nLineLength - 1] = nZPLineLength - 2;
+                            for (int nPoint = 1; nPoint < nLineLength - 1; nPoint++)
+                            {
+                                while ((pdCalibrationZPPoint[nTemp] < (nZPFactor * nPoint)) && (nTemp < nZPLineLength - 1))
+                                    nTemp++;
+                                nTemp--;
+                                pnCalibrationIndex[nPoint] = nTemp;
+                            }
+
+                        }   // if (UIData.bCalibrate
+
+                        #endregion
+
+                        #region save / load calibration information
+                        if (ThreadData.arweProcessingCalibrationSave.WaitOne(0) == true)
+                        {
+                            string strName = "calibration.dat";
+                            FileStream fs = File.Open(strName, FileMode.Create);
+                            BinaryWriter binWriter = new BinaryWriter(fs);
+                            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                binWriter.Write(Convert.ToInt32(pnCalibrationIndex[nPoint]));
+                            for (int nPoint = 0; nPoint < nZPLineLength; nPoint++)
+                                binWriter.Write(pdCalibrationZPPoint[nPoint]);
+                            binWriter.Write(nLineLength);
+                            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                binWriter.Write(pdReference[nPoint]);
+                            binWriter.Write(nNumberLines);
+                            for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                    binWriter.Write(pdArray[nLine * nLineLength + nPoint]);
+                            fs.Close();
+                        }   // if (ThreadData.arweProcessingCalibrationSave.WaitOne(0)
+
+                        if (ThreadData.arweProcessingCalibrationLoad.WaitOne(0) == true)
+                        {
+                            string strName = "calibration.dat";
+                            FileStream fs = File.Open(strName, FileMode.Open);
+                            BinaryReader binReader = new BinaryReader(fs);
+                            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                pnCalibrationIndex[nPoint] = binReader.ReadInt32();
+                            for (int nPoint = 0; nPoint < nZPLineLength; nPoint++)
+                                pdCalibrationZPPoint[nPoint] = binReader.ReadDouble();
+                            fs.Close();
+                        }   // if (ThreadData.arweProcessingCalibrationLoad.WaitOne(0)
+                        #endregion
+
+                        #region apply calibration (output: pcdCalibrated)
+
+                        // apply calibration
+                        int nMidPoint = nLineLength / 2;
+                        ComplexDouble cdHalf = new ComplexDouble();
+                        cdHalf.Real = 0.5;
+                        cdHalf.Imaginary = 0.0;
+                        Array.Clear(pcdCalibrated, 0, nNumberLines * nLineLength);
+                        for (int nLine = 0; nLine < nNumberLines; nLine += nSkipLines)
+                        {
+                            System.Buffer.BlockCopy(pdArray, nLine * nLineLength * sizeof(double), pdLine, 0, nLineLength * sizeof(double));    // copy one line from array
+                            pdLine = (pdLine.Zip(pdReference, (x, y) => x - y)).ToArray();                                                      // subtract reference
+                            pcdFFT = NationalInstruments.Analysis.Dsp.Transforms.RealFft(pdLine);                                               // fft
+                            pcdFFT[nMidPoint] = pcdFFT[nMidPoint].Multiply(cdHalf);                                                             // zero-pad
+                            Array.Clear(pcdZPFFT, 0, nZPLineLength);
+                            Array.Copy(pcdFFT, 0, pcdZPFFT, 0, nMidPoint + 1);
+                            Array.Copy(pcdFFT, nMidPoint, pcdZPFFT, nZPLineLength - nMidPoint, nMidPoint);
+                            pcdZPLine = NationalInstruments.Analysis.Dsp.Transforms.InverseFft(pcdZPFFT, false);                                     // inverse fft
+                            pcdCalibrated[nLine * nLineLength + 0].Real = pcdZPLine[0].Real;
+                            for (int nPoint = 1; nPoint < nLineLength - 1; nPoint++)                                                            // apply interpolation
+                                pcdCalibrated[nLine * nLineLength + nPoint].Real = nZPFactor * ((nPoint * nZPFactor - pdCalibrationZPPoint[pnCalibrationIndex[nPoint]]) * (pcdZPLine[pnCalibrationIndex[nPoint] + 1].Real - pcdZPLine[pnCalibrationIndex[nPoint]].Real) / (pdCalibrationZPPoint[pnCalibrationIndex[nPoint] + 1] - pdCalibrationZPPoint[pnCalibrationIndex[nPoint]]) + pcdZPLine[pnCalibrationIndex[nPoint]].Real);
+                            pcdCalibrated[nLine * nLineLength + nLineLength - 1].Real = pcdZPLine[nZPLineLength - 1].Real;
+                        }   // for (int nLine
+
+                        #endregion
+
+                        #region dispersion calculation section
+
+                        if (UIData.bDispersion)
+                        {
+                            // create mask for depth profiles
+                            ComplexDouble[] pcdMask = new ComplexDouble[nLineLength];
+                            ComplexDouble[] pcdMasked = new ComplexDouble[nLineLength];
+                            double[] pdPhase = new double[nLineLength];
+
+                            Array.Clear(pcdMask, 0, nLineLength);
+                            for (int nPoint = 0; nPoint < UIData.nDispersionLeft - UIData.nDispersionRound; nPoint++)
+                                pcdMask[nPoint].Real = 0.0;
+                            for (int nPoint = UIData.nDispersionLeft - UIData.nDispersionRound; nPoint < UIData.nDispersionLeft; nPoint++)
+                                pcdMask[nPoint].Real = 0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(UIData.nDispersionLeft - nPoint) / Convert.ToDouble(UIData.nDispersionRound)));
+                            for (int nPoint = UIData.nDispersionLeft; nPoint < UIData.nDispersionRight; nPoint++)
+                                pcdMask[nPoint].Real = 1.0;
+                            for (int nPoint = UIData.nDispersionRight; nPoint < UIData.nDispersionRight + UIData.nDispersionRound; nPoint++)
+                                pcdMask[nPoint].Real = 0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(nPoint - UIData.nDispersionRight) / Convert.ToDouble(UIData.nDispersionRound)));
+                            for (int nPoint = UIData.nDispersionRight + UIData.nDispersionRound; nPoint < nLineLength; nPoint++)
+                                pcdMask[nPoint].Real = 0.0;
+
+                            Array.Clear(pdSum, 0, nLineLength);
+                            pdZPSum = new double[nZPLineLength];
+                            Array.Clear(pdZPSum, 0, nZPLineLength);
+                            dLineCount = 0.0;
+                            for (int nLine = 0; nLine < nNumberLines; nLine += nSkipLines)
+                            {
+                                Array.Copy(pcdCalibrated, nLine * nLineLength, pcdLine, 0, nLineLength);            // copy line from calibrated buffer
+                                pcdFFT = NationalInstruments.Analysis.Dsp.Transforms.Fft(pcdLine, false);           // do fft
+                                for (int nPoint = 0; nPoint < nLineLength / 2; nPoint++)                            // keep track of sum for plot
+                                    pdSum[nPoint] += pcdFFT[nPoint].Magnitude * pcdFFT[nPoint].Magnitude;
+                                for (int nPoint = 0; nPoint < nLineLength; nPoint++)                                // apply mask
+                                    pcdMasked[nPoint] = pcdFFT[nPoint].Multiply(pcdMask[nPoint]);
+                                pcdLine = NationalInstruments.Analysis.Dsp.Transforms.InverseFft(pcdMasked, false); // inverse fft
+                                for (int nPoint = 0; nPoint < nLineLength; nPoint++)                                // calculate phase
+                                    pdPhase[nPoint] = pcdLine[nPoint].Phase;
+                                NationalInstruments.Analysis.Dsp.SignalProcessing.UnwrapPhase(pdPhase);             // unwrap phase
+                                pdZPSum = (pdZPSum.Zip(pdPhase, (x, y) => x + y)).ToArray();                        // keep running sum of phases
+                                dLineCount += 1.0;
+                            }
+                            double dMin = pdZPSum[0] / dLineCount;
+                            double dMax = pdZPSum[nLineLength - 1] / dLineCount;
+                            //                        axisDispersionPhaseVertical.Range = new Range<double>(dMin, dMax);
+                            double dSlope = (dMax - dMin) / Convert.ToDouble(nLineLength);
+                            for (int nPoint = 0; nPoint < nLineLength / 2; nPoint++)
+                            {
+                                ThreadData.pdDispersionDepthProfile[0, nPoint] = 10.0 * Math.Log10(pdSum[nPoint] / dLineCount);
+                                ThreadData.pdDispersionDepthProfile[1, nPoint] = 10.0 * Math.Log10((pcdMask[nPoint].Magnitude) * (pcdMask[nPoint].Magnitude) * (pdSum[nPoint] / dLineCount));
+                                ThreadData.pdDispersionPhase[0, nPoint] = pdZPSum[nPoint] / dLineCount;
+                                ThreadData.pdDispersionPhase[1, nPoint] = dMin + dSlope * Convert.ToDouble(nPoint);
+                                pcdDispersionCorrection[nPoint].Real = Math.Cos(ThreadData.pdDispersionPhase[1, nPoint] - ThreadData.pdDispersionPhase[0, nPoint]);
+                                pcdDispersionCorrection[nPoint].Imaginary = Math.Sin(ThreadData.pdDispersionPhase[1, nPoint] - ThreadData.pdDispersionPhase[0, nPoint]);
+                            }
+                            for (int nPoint = nLineLength / 2; nPoint < nLineLength; nPoint++)
+                            {
+                                ThreadData.pdDispersionPhase[0, nPoint] = pdZPSum[nPoint] / dLineCount;
+                                ThreadData.pdDispersionPhase[1, nPoint] = dMin + dSlope * Convert.ToDouble(nPoint);
+                                pcdDispersionCorrection[nPoint].Real = Math.Cos(ThreadData.pdDispersionPhase[1, nPoint] - ThreadData.pdDispersionPhase[0, nPoint]);
+                                pcdDispersionCorrection[nPoint].Imaginary = Math.Sin(ThreadData.pdDispersionPhase[1, nPoint] - ThreadData.pdDispersionPhase[0, nPoint]);
+                            }
+
+                        }   // if (UIData.bDispersion
+
+                        # endregion
+
+                        #region load / save dispersion compensation
+                        if (ThreadData.arweProcessingDispersionSave.WaitOne(0) == true)
+                        {
+                            string strName = "dispersion.dat";
+                            FileStream fs = File.Open(strName, FileMode.Create);
+                            BinaryWriter binWriter = new BinaryWriter(fs);
+                            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                            {
+                                binWriter.Write(pcdDispersionCorrection[nPoint].Real);
+                                binWriter.Write(pcdDispersionCorrection[nPoint].Imaginary);
+                            }
+                            binWriter.Write(nLineLength);
+                            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                binWriter.Write(pdReference[nPoint]);
+                            binWriter.Write(nNumberLines);
+                            for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                                    binWriter.Write(pdArray[nLine * nLineLength + nPoint]);
+                            fs.Close();
+                        }   // if (ThreadData.arweProcessingDispersionSave.WaitOne(0)
+
+                        if (ThreadData.arweProcessingDispersionLoad.WaitOne(0) == true)
+                        {
+                            string strName = "dispersion.dat";
+                            FileStream fs = File.Open(strName, FileMode.Open);
+                            BinaryReader binReader = new BinaryReader(fs);
+                            for (int nPoint = 0; nPoint < nLineLength; nPoint++)
+                            {
+                                pcdDispersionCorrection[nPoint].Real = binReader.ReadDouble();
+                                pcdDispersionCorrection[nPoint].Imaginary = binReader.ReadDouble();
+                            }
+                            fs.Close();
+                        }   // if (ThreadData.arweProcessingDispersionLoad.WaitOne(0)
+                        #endregion
+
+                        #region apply dispersion compensation and convert to depth profiles
+
+                        nIntensityLine = UIData.nIntensityLine;
+                        if (nIntensityLine < 0)
+                            nIntensityLine = 0;
+                        if (nIntensityLine >= nNumberLines)
+                            nIntensityLine = nNumberLines - 1;
+
+                        nIntensityPoint = UIData.nIntensityPoint;
+                        if (nIntensityPoint < 0)
+                            nIntensityPoint = 0;
+                        if (nIntensityPoint >= nLineLength / 2)
+                            nIntensityPoint = nLineLength / 2 - 1;
+
+                        for (int nLine = 0; nLine < nNumberLines; nLine += nSkipLines)
+                        {
+                            Array.Copy(pcdCalibrated, nLine * nLineLength, pcdLine, 0, nLineLength);            // copy line from calibrated buffer
+                            pcdLine = pcdLine.Zip(pcdDispersionCorrection, (x, y) => x.Multiply(y)).ToArray();
+                            pcdFFT = NationalInstruments.Analysis.Dsp.Transforms.Fft(pcdLine, false);           // do fft
+                            for (int nSkip = 0; nSkip < nSkipLines; nSkip++)
+                            {
+                                for (int nPoint = 0; nPoint < nLineLength / 2; nPoint++)
+                                {
+                                    if (nLine + nSkip < nNumberLines)
+                                    {
+                                        ThreadData.pdIntensity[nLine + nSkip, nPoint] = 20.0 * Math.Log10(pcdFFT[nPoint].Magnitude);
+                                        pdPhaseImage[(nLine + nSkip) * (nLineLength / 2) + nPoint] = pcdFFT[nPoint].Phase;
+                                    }
+                                }
+                            }
+                        }
+
+                        for (int nPoint = 0; nPoint < nLineLength / 2; nPoint++)
+                            UIData.pdIntensityLeft[0, nPoint] = ThreadData.pdIntensity[nIntensityLine, nPoint];
+
+                        for (int nLine = 0; nLine < nNumberLines; nLine++)
+                            UIData.pdIntensityTop[0, nLine] = ThreadData.pdIntensity[nLine, nIntensityPoint];
+
+                        #endregion
+
+                        # region variable image
+
+                        if (UIData.bShowVariable)
+                        {
+                            #region change of variable type
+                            if (UIData.nVariableType != ThreadData.nCurrentVariableType)
+                            {
+                                switch (UIData.nVariableType)
+                                {
+                                    case 0: // en face
+                                        ThreadData.pdVariable = new double[nNumberLines, nNumberFrames];
+                                        UIData.pdVariableTop = new double[2, nNumberLines];
+                                        UIData.pdVariableLeft = new double[2, nNumberFrames];
+                                        UIData.pdVariableImage = new double[nNumberLines, nNumberFrames];
+                                        break;
+                                    case 1: // phase
+                                        ThreadData.pdVariable = new double[nNumberLines, nLineLength / 2];
+                                        UIData.pdVariableTop = new double[2, nNumberLines];
+                                        UIData.pdVariableLeft = new double[2, nLineLength / 2];
+                                        UIData.pdVariableImage = new double[nNumberLines, nLineLength / 2];
+                                        break;
+                                }
+                                ThreadData.arweProcessingVariableChange.Set();
+                                ThreadData.nCurrentVariableType = UIData.nVariableType;
+                            }
+                            #endregion
+
+                            switch (ThreadData.nCurrentVariableType)
+                            {
+                                case 0: // en face
+                                    #region calculation
+                                    nVariableLine = UIData.nVariableLine;
+                                    if (nVariableLine < 0)
+                                        nVariableLine = 0;
+                                    if (nVariableLine >= nNumberLines)
+                                        nVariableLine = nNumberLines - 1;
+
+                                    nVariablePoint = UIData.nVariablePoint;
+                                    if (nVariablePoint < 0)
+                                        nVariablePoint = 0;
+                                    if (nVariablePoint >= nNumberFrames)
+                                        nVariablePoint = nNumberFrames;
+
+                                    nEnFaceMinDepth = UIData.nEnFaceMinDepth;
+                                    if (nEnFaceMinDepth < 0)
+                                        nEnFaceMinDepth = 0;
+                                    if (nEnFaceMinDepth >= (nLineLength / 2 - 3))
+                                        nEnFaceMinDepth = nLineLength / 2 - 2;
+
+                                    nEnFaceMaxDepth = UIData.nEnFaceMaxDepth;
+                                    if (nEnFaceMaxDepth <= nEnFaceMinDepth)
+                                        nEnFaceMaxDepth = nEnFaceMinDepth + 1;
+                                    if (nEnFaceMaxDepth >= nLineLength / 2)
+                                        nEnFaceMaxDepth = nLineLength / 2 - 1;
+                                    
+                                    double dTemp;
+                                    for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                    {
+                                        dTemp = 0;
+                                        for (int nPoint = nEnFaceMinDepth; nPoint < nEnFaceMaxDepth; nPoint++)
+                                            dTemp += ThreadData.pdIntensity[nLine, nPoint];
+                                        ThreadData.pdVariable[nLine, nFrame - 1] = dTemp / Convert.ToDouble(nEnFaceMaxDepth - nEnFaceMinDepth);
+                                    }
+
+                                    for (int nPoint = 0; nPoint < nNumberFrames; nPoint++)
+                                        UIData.pdVariableLeft[0, nPoint] = ThreadData.pdVariable[nVariableLine, nPoint];
+
+                                    for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                        UIData.pdVariableTop[0, nLine] = ThreadData.pdVariable[nLine, nVariablePoint];
+                                    #endregion
+                                    break;
+                                case 1: // phase
+                                    #region calculation
+                                    nVariableLine = UIData.nVariableLine;
+                                    if (nVariableLine < 0)
+                                        nVariableLine = 0;
+                                    if (nVariableLine >= nNumberLines)
+                                        nVariableLine = nNumberLines - 1;
+
+                                    nVariablePoint = UIData.nVariablePoint;
+                                    if (nVariablePoint < 0)
+                                        nVariablePoint = 0;
+                                    if (nVariablePoint >= (nLineLength / 2))
+                                        nVariablePoint = nLineLength / 2 - 1;
+
+                                    nPhaseReferenceDepth = UIData.nPhaseReferenceDepth;
+                                    if (nPhaseReferenceDepth < -1)
+                                        nPhaseReferenceDepth = -1;
+                                    if (nPhaseReferenceDepth >= (nLineLength / 2 - 1))
+                                        nPhaseReferenceDepth = nLineLength / 2 - 1;
+
+                                    if (nPhaseReferenceDepth == -1)
+                                    {
+                                        for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                            for (int nPoint = 0; nPoint < (nLineLength / 2); nPoint++)
+                                                ThreadData.pdVariable[nLine, nPoint] = pdPhaseImage[nLine * (nLineLength / 2) + nPoint];
+                                    }
+                                    else
+                                    {
+                                        for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                        {
+                                            dReference = pdPhaseImage[nLine * (nLineLength / 2) + nPhaseReferenceDepth];
+                                            for (int nPoint = 0; nPoint < (nLineLength / 2); nPoint++)
+                                            {
+                                                dPhase = pdPhaseImage[nLine * (nLineLength / 2) + nPoint] - dReference;
+                                                if (dPhase > Math.PI)
+                                                    dPhase -= 2 * Math.PI;
+                                                if (dPhase < -Math.PI)
+                                                    dPhase += 2 * Math.PI;
+                                                ThreadData.pdVariable[nLine, nPoint] = dPhase;
+                                            }
+                                        }
+                                    }
+
+                                    for (int nPoint = 0; nPoint < (nLineLength / 2); nPoint++)
+                                        UIData.pdVariableLeft[0, nPoint] = ThreadData.pdVariable[nVariableLine, nPoint];
+                                    for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                    {
+                                        UIData.pdVariableTop[0, nLine] = ThreadData.pdVariable[nLine, nVariablePoint];
+                                        pdVariablePhase[nLine] = ThreadData.pdVariable[nLine, nVariablePoint];
+                                    }
+                                    NationalInstruments.Analysis.Dsp.SignalProcessing.UnwrapPhase(pdVariablePhase);
+                                    dReference = 0;
+                                    for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                        dReference += pdVariablePhase[nLine];
+                                    dReference /= Convert.ToDouble(nNumberLines);
+                                    for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                    {
+                                        dPhase = pdVariablePhase[nLine] - dReference;
+                                        if (dPhase > Math.PI)
+                                            dPhase -= 2 * Math.PI;
+                                        if (dPhase < -Math.PI)
+                                            dPhase += 2 * Math.PI;
+                                        UIData.pdVariableTop[1, nLine] = dPhase;
+                                    }
+
+                                    #endregion
+                                    break;
+                            }
+                        }
+
+                        #endregion
+
+                    }
+                    else
+                    {
+                        Thread.Sleep(1);
+                    }
+                    // do ffts
+
+                    #region copy DAQ data for viewing
+                    for (int nLine = 0; nLine < (UIData.nConfigurationChunksPerImage * UIData.nConfigurationLinesPerChunk); nLine++)
+                    {
+                        UIData.pdGraphDAQ[0, nLine] = pdLocalDAQ[4 * nLine + 0];
+                        UIData.pdGraphDAQ[1, nLine] = pdLocalDAQ[4 * nLine + 1];
+                        UIData.pdGraphDAQ[2, nLine] = pdLocalDAQ[4 * nLine + 2];
+                        UIData.pdGraphDAQ[3, nLine] = pdLocalDAQ[4 * nLine + 3];
+                    }
+                    #endregion
+
+                    #region go to next node
+                    nodeProcessing = nodeProcessing.Next;
+                    if (nodeProcessing == null)
+                        nodeProcessing = nodeList.First;
+                    #endregion
+
+                }
+
+            }   // while (WaitHandle.WaitAny(pweProcessing)
+
+            ThreadData.strProcessingStatus = "out of main loop";
+            // signal that thread is dead
+            ThreadData.mrweProcessingThreadDead.Set();
+
+            ThreadData.strProcessingStatus = "dead";
+        }

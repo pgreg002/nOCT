@@ -85,9 +85,12 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AlazarApiNet">
+      <HintPath>..\..\..\..\AlazarTech\ATS-SDK\7.2.3\Samples_CSharp\AlazarApiNet.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="NationalInstruments.Analysis.Enterprise, Version=19.0.45.49152, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL" />
-    <Reference Include="NationalInstruments.Common, Version=19.1.40.49152, Culture=neutral, PublicKeyToken=dc6ad606294fc298, processorArchitecture=MSIL" />
+    <Reference Include="NationalInstruments.Common, Version=19.0.40.49152, Culture=neutral, PublicKeyToken=dc6ad606294fc298, processorArchitecture=MSIL" />
     <Reference Include="NationalInstruments.Controls, Version=19.0.45.54571, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=MSIL">
       <Private>False</Private>
     </Reference>
