@@ -1612,7 +1612,8 @@ namespace nOCT
                 AlazarAPI.DC_COUPLING,
                 AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
                 AlazarAPI.IMPEDANCE_50_OHM);
-            AlazarAPI.AlazarSetTriggerOperation(boardHandle,
+            AlazarAPI.AlazarSetTriggerOperation(
+                boardHandle,
                 AlazarAPI.TRIG_ENGINE_OP_J,
                 AlazarAPI.TRIG_ENGINE_J,
                 AlazarAPI.TRIG_EXTERNAL,
@@ -1622,6 +1623,10 @@ namespace nOCT
                 AlazarAPI.TRIG_EXTERNAL,
                 AlazarAPI.TRIGGER_SLOPE_POSITIVE,
                 140);
+            AlazarAPI.AlazarSetExternalTrigger(
+                boardHandle,
+                AlazarAPI.DC_COUPLING,
+                AlazarAPI.ETR_5V);
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
