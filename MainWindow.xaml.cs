@@ -1622,6 +1622,7 @@ namespace nOCT
                 AlazarAPI.TRIG_EXTERNAL,
                 AlazarAPI.TRIGGER_SLOPE_POSITIVE,
                 140);
+            //start of Alazar_dev branch's first commit
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
