@@ -1596,6 +1596,11 @@ namespace nOCT
             UInt32 systemId = 1;
             UInt32 boardId = 1;
             var boardHandle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId);
+            AlazarAPI.AlazarSetCaptureClock(boardHandle,
+                AlazarAPI.INTERNAL_CLOCK,
+                AlazarAPI.SAMPLE_RATE_1GSPS,
+                AlazarAPI.CLOCK_EDGE_RISING,
+                0);
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
