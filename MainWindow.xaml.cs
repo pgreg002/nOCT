@@ -1607,6 +1607,11 @@ namespace nOCT
                 AlazarAPI.DC_COUPLING,
                 AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
                 AlazarAPI.IMPEDANCE_50_OHM);
+            AlazarAPI.AlazarInputControl(boardHandle,
+                AlazarAPI.CHANNEL_B,
+                AlazarAPI.DC_COUPLING,
+                AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
+                AlazarAPI.IMPEDANCE_50_OHM);
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
