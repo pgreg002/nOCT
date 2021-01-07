@@ -1596,11 +1596,17 @@ namespace nOCT
             UInt32 systemId = 1;
             UInt32 boardId = 1;
             var boardHandle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId);
+            // configure board
             AlazarAPI.AlazarSetCaptureClock(boardHandle,
                 AlazarAPI.INTERNAL_CLOCK,
                 AlazarAPI.SAMPLE_RATE_1GSPS,
                 AlazarAPI.CLOCK_EDGE_RISING,
                 0);
+            AlazarAPI.AlazarInputControl(boardHandle,
+                AlazarAPI.CHANNEL_A,
+                AlazarAPI.DC_COUPLING,
+                AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
+                AlazarAPI.IMPEDANCE_50_OHM);
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
