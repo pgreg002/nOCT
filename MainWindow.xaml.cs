@@ -1654,7 +1654,7 @@ namespace nOCT
             }
             #endregion
             
-            #region alazar set Traditional autoDMA
+            #region alazar set Traditional autoDMA, total acquisition size
             retCode = AlazarAPI.AlazarBeforeAsyncRead(
                 boardHandle,
                 AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B,
