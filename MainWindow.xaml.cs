@@ -1597,6 +1597,7 @@ namespace nOCT
             UInt32 boardId = 1;
             var boardHandle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId);
             // configure board
+            #region alazar timing configuration
             AlazarAPI.AlazarSetCaptureClock(boardHandle,
                 AlazarAPI.INTERNAL_CLOCK,
                 AlazarAPI.SAMPLE_RATE_1GSPS,
@@ -1627,7 +1628,32 @@ namespace nOCT
                 boardHandle,
                 AlazarAPI.DC_COUPLING,
                 AlazarAPI.ETR_5V);
+            #endregion
+            #region alazar acquisition configuration
+            UInt32 preTriggerSamples    = 0;
+            UInt32 postTriggerSamples   = 8192;
+            UInt32 recordsPerBuffer     = 10;
+            UInt32 BuffersPerAcquisition= 1;
+            UInt32 channelCount         = 2;
+            
+            //Byte bitsPerSample;
+            //UInt32 maxSamplesPerChannel;
+            //UInt32 retCode = AlazarAPI.AlazarGetChannelInfo(
+            //    boardHandle,
+            //    &maxSamplesPerChannel,
+            //    &bitsPerSample);
+            
+            //if(retCode != AlazarAPI.ApiSuccess)
+            //{
+            //    string message = "Error: AlazarGetChannelInfo failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+            //    System.Windows.MessageBox.Show(message,
+            //        "Alazar error",
+            //        MessageBoxButton.OK,
+            //        MessageBoxImage.Warning);
+            //}
 
+
+            #endregion
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
             pweStart[0] = threadData.mreAcquireAlazarKill;
