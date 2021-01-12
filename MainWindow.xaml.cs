@@ -1629,31 +1629,50 @@ namespace nOCT
                 AlazarAPI.DC_COUPLING,
                 AlazarAPI.ETR_5V);
             #endregion
-            #region alazar acquisition configuration
+            
+            #region alazar set record size
             UInt32 preTriggerSamples    = 0;
             UInt32 postTriggerSamples   = 8192;
+            UInt32 samplesPerRecord     = preTriggerSamples + postTriggerSamples;
             UInt32 recordsPerBuffer     = 10;
-            UInt32 BuffersPerAcquisition= 1;
+            UInt32 buffersPerAcquisition= 1;
+            UInt32 recordsPerAcquisition= recordsPerBuffer * buffersPerAcquisition;
             UInt32 channelCount         = 2;
-            
-            //Byte bitsPerSample;
-            //UInt32 maxSamplesPerChannel;
-            //UInt32 retCode = AlazarAPI.AlazarGetChannelInfo(
-            //    boardHandle,
-            //    &maxSamplesPerChannel,
-            //    &bitsPerSample);
-            
-            //if(retCode != AlazarAPI.ApiSuccess)
-            //{
-            //    string message = "Error: AlazarGetChannelInfo failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-            //    System.Windows.MessageBox.Show(message,
-            //        "Alazar error",
-            //        MessageBoxButton.OK,
-            //        MessageBoxImage.Warning);
-            //}
 
+            UInt32 retCode = AlazarAPI.AlazarSetRecordSize(
+                    boardHandle,
+                    preTriggerSamples,
+                    postTriggerSamples);
+
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                string message = "Error: AlazarSetRecordSize failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                System.Windows.MessageBox.Show(message,
+                    "Alazar error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
             #endregion
-              
+            
+            #region alazar set Traditional autoDMA
+            retCode = AlazarAPI.AlazarBeforeAsyncRead(
+                boardHandle,
+                AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B,
+                -(int)preTriggerSamples,
+                samplesPerRecord,
+                recordsPerBuffer,
+                recordsPerAcquisition,
+                AlazarAPI.ADMA_EXTERNAL_STARTCAPTURE | AlazarAPI.ADMA_TRADITIONAL_MODE | AlazarAPI.ADMA_ALLOC_BUFFERS);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                string message = "Error: AlazarBeforeAsyncRead failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                System.Windows.MessageBox.Show(message,
+                    "Alazar error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            #endregion
+
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
             pweStart[0] = threadData.mreAcquireAlazarKill;
