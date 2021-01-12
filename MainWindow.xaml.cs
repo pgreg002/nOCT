@@ -1652,8 +1652,8 @@ namespace nOCT
             //        MessageBoxImage.Warning);
             //}
 
-
             #endregion
+              
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
             pweStart[0] = threadData.mreAcquireAlazarKill;
