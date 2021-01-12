@@ -1635,14 +1635,28 @@ namespace nOCT
             UInt32 recordsPerBuffer     = 10;
             UInt32 BuffersPerAcquisition= 1;
             UInt32 channelCount         = 2;
-            
+
+            UInt32 retCode =
+                AlazarAPI.AlazarSetRecordSize(
+                    boardHandle,
+                    preTriggerSamples,
+                    postTriggerSamples);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                string message = "Error: AlazarSetRecordSize failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                System.Windows.MessageBox.Show(message,
+                    "Alazar error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
             //Byte bitsPerSample;
             //UInt32 maxSamplesPerChannel;
             //UInt32 retCode = AlazarAPI.AlazarGetChannelInfo(
             //    boardHandle,
             //    &maxSamplesPerChannel,
             //    &bitsPerSample);
-            
+
             //if(retCode != AlazarAPI.ApiSuccess)
             //{
             //    string message = "Error: AlazarGetChannelInfo failed-- " + AlazarAPI.AlazarErrorToText(retCode);
