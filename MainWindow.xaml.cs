@@ -1719,6 +1719,8 @@ namespace nOCT
                     nStatus = WaitHandle.WaitAny(pweLoop, 10000);
                     if (nStatus == 0) // nStatus==0 indicates threadData.mreAcquireAlazarKill was set
                     {
+                        AlazarAPI.AlazarAbortAsyncRead(boardHandle); // Abort the acquisition and release resources, 
+                                                                     // must be called after acquisition.
                         // kill
                     }  // if (nStatus
                     if (nStatus == 1) //nStatus == 1 indicates threadData.mreAcquireNodeReady was set
