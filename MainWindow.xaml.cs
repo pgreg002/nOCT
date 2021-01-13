@@ -1712,21 +1712,22 @@ namespace nOCT
             threadData.strAcquireAlazarThreadStatus = "s";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
+                AlazarAPI.AlazarStartCapture(boardHandle); // Arm board to begin the acquisition
                 threadData.strAcquireAlazarThreadStatus = "g";
                 while (threadData.mreAcquireAlazarKill.WaitOne(0) == false)
                 {
                     nStatus = WaitHandle.WaitAny(pweLoop, 10000);
-                    if (nStatus == 0)
+                    if (nStatus == 0) // nStatus==0 indicates threadData.mreAcquireAlazarKill was set
                     {
                         // kill
                     }  // if (nStatus
-                    if (nStatus == 1)
+                    if (nStatus == 1) //nStatus == 1 indicates threadData.mreAcquireNodeReady was set
                     {
                         threadData.areAcquireAlazarGo.Set();
                         threadData.strAcquireAlazarThreadStatus = "G";
                         if (nMode > 0)
                         {
-                            if (threadData.nSystemActual == 0)
+                            if (threadData.nSystemActual == 0) //
                             {
                                 threadData.strAcquireAlazarThreadStatus = "Wa";
                                 ; // real acquisition
