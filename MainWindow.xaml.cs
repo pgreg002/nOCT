@@ -1584,7 +1584,7 @@ namespace nOCT
 
         }  // void AcquireThread
 
-        void AcquireAlazarThread()
+        unsafe void AcquireAlazarThread()
         {
 #region initializing
             threadData.strAcquireAlazarThreadStatus = "i";
@@ -1629,17 +1629,35 @@ namespace nOCT
                 AlazarAPI.DC_COUPLING,
                 AlazarAPI.ETR_5V);
             #endregion
-            
+
             #region alazar set record size
             UInt32 preTriggerSamples    = 0;
             UInt32 postTriggerSamples   = 8192;
-            UInt32 samplesPerRecord     = preTriggerSamples + postTriggerSamples;
             UInt32 recordsPerBuffer     = 10;
             UInt32 buffersPerAcquisition= 1;
             UInt32 recordsPerAcquisition= recordsPerBuffer * buffersPerAcquisition;
             UInt32 channelCount         = 2;
 
-            UInt32 retCode = AlazarAPI.AlazarSetRecordSize(
+            // Get the sample size in bits, and the on-board memory size in samples per channel
+            Byte bitsPerSample;
+            UInt32 maxSamplesPerChannel;
+            UInt32 retCode = AlazarAPI.AlazarGetChannelInfo(boardHandle, &maxSamplesPerChannel, &bitsPerSample);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                string message = "Error: AlazarGetChannelInfo failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                System.Windows.MessageBox.Show(message,
+                    "Alazar error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+            // Calculate the size of each DMA buffer in bytes
+            UInt32 bytesPerSample = ((UInt32)bitsPerSample + 7) / 8;
+            UInt32 samplesPerRecord = preTriggerSamples + postTriggerSamples;
+            UInt32 bytesPerRecord = (bytesPerSample * samplesPerRecord);
+            UInt32 bytesPerBuffer = bytesPerRecord * recordsPerBuffer * channelCount;
+
+            retCode = AlazarAPI.AlazarSetRecordSize(
                     boardHandle,
                     preTriggerSamples,
                     postTriggerSamples);
