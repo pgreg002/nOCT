@@ -1729,11 +1729,16 @@ namespace nOCT
                         threadData.strAcquireAlazarThreadStatus = "G";
                         if (nMode > 0)
                         {
-                            if (threadData.nSystemActual == 0) //
+                            if (threadData.nSystemActual == 0) // What does .nSystemActual==0 indicate? SD-OCT?
                             {
                                 threadData.strAcquireAlazarThreadStatus = "Wa";
-                                ; // real acquisition
-                                Thread.Sleep(1);
+                                AlazarAPI.AlazarWaitNextAsyncBufferComplete(
+                                    boardHandle,
+                                    threadData.nodeAcquire.Value,
+                                    BufferLength_bytes, // U32 bytesToCopy -- bytes to copy into buffer
+                                    1000); // U32 timeout_ms -- time to wait for buffer
+                                // real acquisition
+                                //Thread.Sleep(1);
                             }
                             else
                             {
