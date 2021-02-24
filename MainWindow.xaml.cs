@@ -95,22 +95,22 @@ namespace nOCT
 
         #region define semi-globals
 
-        private CUIData UIData;
-        LinkedList<CDataNode> nodeList = new LinkedList<CDataNode>();
-        private CThreadData threadData = new CThreadData();
-        DispatcherTimer timerUIUpdate = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            private CUIData UIData;
+            LinkedList<CDataNode> nodeList = new LinkedList<CDataNode>();
+            private CThreadData threadData = new CThreadData();
+            DispatcherTimer timerUIUpdate = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
 
-        #if TRUECUDA
-        nOCTcudaWrapper cudaWrapper;
-        #endif  // TRUECUDA
+            #if TRUECUDA
+            nOCTcudaWrapper cudaWrapper;
+            #endif  // TRUECUDA
 
-        #if TRUEIPP
-        nOCTippWrapper ippWrapper;
-        #endif  // TRUEIPP
+            #if TRUEIPP
+            nOCTippWrapper ippWrapper;
+            #endif  // TRUEIPP
 
-        #if TRUEIMAQ
-        nOCTimaqWrapper imaqWrapper;
-        #endif  // TRUEIMAQ
+            #if TRUEIMAQ
+            nOCTimaqWrapper imaqWrapper;
+            #endif  // TRUEIMAQ
 
         #endregion  // define semi-globals
 
@@ -755,6 +755,11 @@ namespace nOCT
                     threadData.nRawNumberAlines = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;  // will be two channels, each with this number of lines
                     threadData.nRawAlineLength = UIData.nLLAlazarLineLength;
                     threadData.pnProcess1Alazar = new UInt16[2 * threadData.nRawNumberAlines * threadData.nRawAlineLength];
+                    threadData.pnProcess1AlazarMZI = new UInt16[threadData.nRawNumberAlines * threadData.nRawAlineLength];
+                    threadData.pnProcess1AlazarOCT = new UInt16[threadData.nRawNumberAlines * threadData.nRawAlineLength];
+                    threadData.pfProcess1Alazar = new float[2 * threadData.nRawNumberAlines * threadData.nRawAlineLength];
+                    threadData.pfProcess1AlazarMZI = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
+                    threadData.pfProcess1AlazarOCT = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
                     threadData.pfProcess1DAQ = new float[4 * threadData.nRawNumberAlines];
                     threadData.pnProcess2AAlazar = new UInt16[2 * threadData.nRawNumberAlines * threadData.nRawAlineLength];
                     threadData.pfProcess2ADAQ = new float[4 * threadData.nRawNumberAlines];
@@ -903,6 +908,8 @@ namespace nOCT
                 case 2: // line field
                     break;
                 case 3: // OFDI
+                    fMin = UIData.fULAlazarMin;
+                    fMax = UIData.fULAlazarMax;
                     break;
                 case 4: // PS OFDI
                     break;
@@ -1070,9 +1077,9 @@ namespace nOCT
 
         private void btnLROperationStart_Click(object sender, RoutedEventArgs e)
         {
-#region threads
-            threadData.mreMainRun.Set();
-#endregion
+            #region threads
+                        threadData.mreMainRun.Set();
+            #endregion
         }
 
 
@@ -1091,124 +1098,124 @@ namespace nOCT
 
         void MainThread()
         {
-#region initializing
-            threadData.strMainThreadStatus = "Initializing...";
+            #region initializing
+                        threadData.strMainThreadStatus = "Initializing...";
 
-            // start other threads
-            threadData.threadOutput = new Thread(OutputThread);
-            threadData.threadOutput.Priority = ThreadPriority.Normal;
-            threadData.threadOutput.Start();
+                        // start other threads
+                        threadData.threadOutput = new Thread(OutputThread);
+                        threadData.threadOutput.Priority = ThreadPriority.Normal;
+                        threadData.threadOutput.Start();
 
-            threadData.threadAcquire = new Thread(AcquireThread);
-            threadData.threadAcquire.Priority = ThreadPriority.Normal;
-            threadData.threadAcquire.Start();
+                        threadData.threadAcquire = new Thread(AcquireThread);
+                        threadData.threadAcquire.Priority = ThreadPriority.Normal;
+                        threadData.threadAcquire.Start();
 
-            threadData.threadSave = new Thread(SaveThread);
-            threadData.threadSave.Priority = ThreadPriority.Normal;
-            threadData.threadSave.Start();
+                        threadData.threadSave = new Thread(SaveThread);
+                        threadData.threadSave.Priority = ThreadPriority.Normal;
+                        threadData.threadSave.Start();
 
-            threadData.threadProcess = new Thread(ProcessThread);
-            threadData.threadProcess.Priority = ThreadPriority.Normal;
-            threadData.threadProcess.Start();
+                        threadData.threadProcess = new Thread(ProcessThread);
+                        threadData.threadProcess.Priority = ThreadPriority.Normal;
+                        threadData.threadProcess.Start();
 
-            threadData.threadProcess1 = new Thread(Process1Thread);
-            threadData.threadProcess1.Priority = ThreadPriority.Normal;
-            threadData.threadProcess1.Start();
+                        threadData.threadProcess1 = new Thread(Process1Thread);
+                        threadData.threadProcess1.Priority = ThreadPriority.Normal;
+                        threadData.threadProcess1.Start();
 
-            threadData.threadProcess2 = new Thread(Process2Thread);
-            threadData.threadProcess2.Priority = ThreadPriority.Normal;
-            threadData.threadProcess2.Start();
+                        threadData.threadProcess2 = new Thread(Process2Thread);
+                        threadData.threadProcess2.Priority = ThreadPriority.Normal;
+                        threadData.threadProcess2.Start();
 
-            threadData.threadCleanup = new Thread(CleanupThread);
-            threadData.threadCleanup.Priority = ThreadPriority.Normal;
-            threadData.threadCleanup.Start();
+                        threadData.threadCleanup = new Thread(CleanupThread);
+                        threadData.threadCleanup.Priority = ThreadPriority.Normal;
+                        threadData.threadCleanup.Start();
 
-            // wait for threads
-            threadData.mreOutputReady.WaitOne();
-            threadData.mreAcquireReady.WaitOne();
-            threadData.mreSaveReady.WaitOne();
-            threadData.mreProcessReady.WaitOne();
-            threadData.mreProcess1Ready.WaitOne();
-            threadData.mreProcess2Ready.WaitOne();
-            threadData.mreCleanupReady.WaitOne();
+                        // wait for threads
+                        threadData.mreOutputReady.WaitOne();
+                        threadData.mreAcquireReady.WaitOne();
+                        threadData.mreSaveReady.WaitOne();
+                        threadData.mreProcessReady.WaitOne();
+                        threadData.mreProcess1Ready.WaitOne();
+                        threadData.mreProcess2Ready.WaitOne();
+                        threadData.mreCleanupReady.WaitOne();
 
-            // set up wait handles for starting
-            WaitHandle[] pweStart = new WaitHandle[2];
-            pweStart[0] = threadData.mreMainKill;
-            pweStart[1] = threadData.mreMainRun;
-            // set up wait handles for main loop
-            WaitHandle[] pweLoop = new WaitHandle[2];
-            pweLoop[0] = threadData.mreMainKill;
-            pweLoop[1] = threadData.ssAcquireComplete.AvailableWaitHandle;
+                        // set up wait handles for starting
+                        WaitHandle[] pweStart = new WaitHandle[2];
+                        pweStart[0] = threadData.mreMainKill;
+                        pweStart[1] = threadData.mreMainRun;
+                        // set up wait handles for main loop
+                        WaitHandle[] pweLoop = new WaitHandle[2];
+                        pweLoop[0] = threadData.mreMainKill;
+                        pweLoop[1] = threadData.ssAcquireComplete.AvailableWaitHandle;
 
-            // initialization complete
-            threadData.mreMainReady.Set();
-            threadData.strMainThreadStatus = "Ready!";
-#endregion
+                        // initialization complete
+                        threadData.mreMainReady.Set();
+                        threadData.strMainThreadStatus = "Ready!";
+            #endregion
 
-#region main loop
-            threadData.strMainThreadStatus = "Set...";
-            if (WaitHandle.WaitAny(pweStart) == 1)
-            {
-                threadData.mreOutputRun.Set();
-                threadData.mreAcquireRun.Set();
-                threadData.mreSaveRun.Set();
-                threadData.mreProcessRun.Set();
-                threadData.mreProcess1Run.Set();
-                threadData.mreProcess2Run.Set();
-                threadData.mreCleanupRun.Set();
+            #region main loop
+                        threadData.strMainThreadStatus = "Set...";
+                        if (WaitHandle.WaitAny(pweStart) == 1)
+                        {
+                            threadData.mreOutputRun.Set();
+                            threadData.mreAcquireRun.Set();
+                            threadData.mreSaveRun.Set();
+                            threadData.mreProcessRun.Set();
+                            threadData.mreProcess1Run.Set();
+                            threadData.mreProcess2Run.Set();
+                            threadData.mreCleanupRun.Set();
 
-                threadData.strMainThreadStatus = "GO!";
+                            threadData.strMainThreadStatus = "GO!";
 
-                while (WaitHandle.WaitAny(pweLoop) != 0)
-                {
-                    threadData.strMainThreadStatus = "waiting";
-                    threadData.ssAcquireComplete.Wait();
-                    threadData.strMainThreadStatus = "updating";
-                    threadData.mreCleanupAction.Set();
-                    Thread.Sleep(1);
-                }
+                            while (WaitHandle.WaitAny(pweLoop) != 0)
+                            {
+                                threadData.strMainThreadStatus = "waiting";
+                                threadData.ssAcquireComplete.Wait();
+                                threadData.strMainThreadStatus = "updating";
+                                threadData.mreCleanupAction.Set();
+                                Thread.Sleep(1);
+                            }
 
-            }
-#endregion
+                        }
+            #endregion
 
-#region cleanup
-            threadData.strMainThreadStatus = "Cleaning up...";
+            #region cleanup
+                        threadData.strMainThreadStatus = "Cleaning up...";
 
-            // send kill command to other threads
-            threadData.mreAcquireKill.Set();
-            threadData.mreAcquireDead.WaitOne();
+                        // send kill command to other threads
+                        threadData.mreAcquireKill.Set();
+                        threadData.mreAcquireDead.WaitOne();
 
-            threadData.mreSaveKill.Set();
-            threadData.mreSaveDead.WaitOne();
+                        threadData.mreSaveKill.Set();
+                        threadData.mreSaveDead.WaitOne();
 
-            threadData.mreProcessKill.Set();
-            threadData.mreProcessDead.WaitOne();
+                        threadData.mreProcessKill.Set();
+                        threadData.mreProcessDead.WaitOne();
 
-            threadData.mreProcess1Kill.Set();
-            threadData.mreProcess1Dead.WaitOne();
+                        threadData.mreProcess1Kill.Set();
+                        threadData.mreProcess1Dead.WaitOne();
 
-            threadData.mreProcess2Kill.Set();
-            threadData.mreProcess2Dead.WaitOne();
+                        threadData.mreProcess2Kill.Set();
+                        threadData.mreProcess2Dead.WaitOne();
 
-            threadData.mreCleanupAction.Set();
-            threadData.mreCleanupKill.Set();
-            threadData.mreCleanupDead.WaitOne();
+                        threadData.mreCleanupAction.Set();
+                        threadData.mreCleanupKill.Set();
+                        threadData.mreCleanupDead.WaitOne();
 
-            // wait for threads to end
-            threadData.mreOutputKill.Set();
-            threadData.mreOutputDead.WaitOne();
+                        // wait for threads to end
+                        threadData.mreOutputKill.Set();
+                        threadData.mreOutputDead.WaitOne();
 
-            // all done
-            threadData.mreMainDead.Set();
-            threadData.strMainThreadStatus = "Done.";
-#endregion
+                        // all done
+                        threadData.mreMainDead.Set();
+                        threadData.strMainThreadStatus = "Done.";
+            #endregion
 
         }
 
         void OutputThread()
         {
-#region initializing
+            #region initializing
             threadData.strOutputThreadStatus = "Initializing...";
 
 
@@ -1217,7 +1224,7 @@ namespace nOCT
             int nNumberLines = 2048;
             int nNumberFrames = 512;
 
-#if (TRUEDAQ)
+            #if (TRUEDAQ)
             // counter task
             Task taskCtr = new Task();
             taskCtr.COChannels.CreatePulseChannelFrequency("Dev1/ctr0", "ctrClock", COPulseFrequencyUnits.Hertz, COPulseIdleState.Low, 0.0, 2 * dLineTriggerRate, 0.5);
@@ -1306,7 +1313,7 @@ namespace nOCT
                 }
             }
             anaWriter.WriteMultiSample(false, anaWFM);
-#endif
+            #endif
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
@@ -1320,9 +1327,9 @@ namespace nOCT
             // initialization complete
             threadData.mreOutputReady.Set();
             threadData.strOutputThreadStatus = "Ready!";
-#endregion
+            #endregion
 
-#region main loop
+            #region main loop
             threadData.strOutputThreadStatus = "Set...";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
@@ -1375,9 +1382,9 @@ namespace nOCT
                     threadData.strOutputThreadStatus = "idle...";
                 }
             }
-#endregion
+            #endregion
 
-#region cleanup
+            #region cleanup
             threadData.strOutputThreadStatus = "Cleaning up...";
 
 #if (TRUEDAQ)
@@ -1393,7 +1400,7 @@ namespace nOCT
 
             threadData.mreOutputDead.Set();
             threadData.strOutputThreadStatus = "Done.";
-#endregion
+            #endregion
 
         }
 
@@ -1584,93 +1591,170 @@ namespace nOCT
 
         }  // void AcquireThread
 
-        void AcquireAlazarThread()
+        unsafe void AcquireAlazarThread()
         {
-#region initializing
+            #region initializing
             threadData.strAcquireAlazarThreadStatus = "i";
 
             // initialization
             bool bTroublemaker = false;
             int nMode = -1;
-            // address board
+            UInt32 retCode;
+
+            // configure board
+            IntPtr boardHandle = IntPtr.Zero;
             UInt32 systemId = 1;
             UInt32 boardId = 1;
-            var boardHandle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId);
-            // configure board
+            boardHandle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId); // address board
+            if (boardHandle == IntPtr.Zero)
+            {
+                string message = "Error: AlazarGetBoardBySystemID failed-- boardHandle == IntPtr.Zero";
+                System.Windows.MessageBox.Show(message,
+                    "Alazar error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
             #region alazar timing configuration
-            AlazarAPI.AlazarSetCaptureClock(boardHandle,
+            retCode = AlazarAPI.AlazarSetCaptureClock(boardHandle,
                 AlazarAPI.INTERNAL_CLOCK,
-                AlazarAPI.SAMPLE_RATE_1GSPS,
+                AlazarAPI.SAMPLE_RATE_1000MSPS,
                 AlazarAPI.CLOCK_EDGE_RISING,
                 0);
-            AlazarAPI.AlazarInputControl(boardHandle,
+                if (retCode != AlazarAPI.ApiSuccess)
+            {
+                string message = "Error: AlazarSetCaptureClock failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                System.Windows.MessageBox.Show(message,
+                    "Alazar error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+            retCode = AlazarAPI.AlazarInputControl(boardHandle,
                 AlazarAPI.CHANNEL_A,
                 AlazarAPI.DC_COUPLING,
                 AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
                 AlazarAPI.IMPEDANCE_50_OHM);
-            AlazarAPI.AlazarInputControl(boardHandle,
+                if (retCode != AlazarAPI.ApiSuccess)
+                {
+                    string message = "Error: AlazarInputControl CHANNEL_A failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                    System.Windows.MessageBox.Show(message,
+                        "Alazar error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            retCode = AlazarAPI.AlazarSetBWLimit(boardHandle, AlazarAPI.CHANNEL_A, 0); // disable BW limit filter
+                if (retCode != AlazarAPI.ApiSuccess)
+                {
+                    string message = "Error: AlazarSetBWLimit CHANNEL_A failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                    System.Windows.MessageBox.Show(message,
+                        "Alazar error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+
+            retCode = AlazarAPI.AlazarInputControl(boardHandle,
                 AlazarAPI.CHANNEL_B,
                 AlazarAPI.DC_COUPLING,
                 AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
                 AlazarAPI.IMPEDANCE_50_OHM);
-            AlazarAPI.AlazarSetTriggerOperation(
+                if (retCode != AlazarAPI.ApiSuccess)
+                {
+                    string message = "Error: AlazarInputControl CHANNEL_B failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                    System.Windows.MessageBox.Show(message,
+                        "Alazar error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            retCode = AlazarAPI.AlazarSetBWLimit(boardHandle, AlazarAPI.CHANNEL_B, 0); // disable BW limit filter
+                if (retCode != AlazarAPI.ApiSuccess)
+                {
+                    string message = "Error: AlazarSetBWLimit CHANNEL_B failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                    System.Windows.MessageBox.Show(message,
+                        "Alazar error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+
+            retCode = AlazarAPI.AlazarSetTriggerOperation(
                 boardHandle,
                 AlazarAPI.TRIG_ENGINE_OP_J,
                 AlazarAPI.TRIG_ENGINE_J,
                 AlazarAPI.TRIG_EXTERNAL,
                 AlazarAPI.TRIGGER_SLOPE_POSITIVE,
-                140,
+                150,
                 AlazarAPI.TRIG_ENGINE_K,
-                AlazarAPI.TRIG_EXTERNAL,
+                AlazarAPI.TRIG_DISABLE,
                 AlazarAPI.TRIGGER_SLOPE_POSITIVE,
-                140);
-            AlazarAPI.AlazarSetExternalTrigger(
+                128);
+                if (retCode != AlazarAPI.ApiSuccess)
+                {
+                    string message = "Error: AlazarSetTriggerOperation failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                    System.Windows.MessageBox.Show(message,
+                        "Alazar error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+            retCode = AlazarAPI.AlazarSetExternalTrigger(
                 boardHandle,
                 AlazarAPI.DC_COUPLING,
-                AlazarAPI.ETR_5V);
-            #endregion
-            
-            #region alazar set record size
-            UInt32 preTriggerSamples    = 0;
-            UInt32 postTriggerSamples   = 8192;
-            UInt32 samplesPerRecord     = preTriggerSamples + postTriggerSamples;
-            UInt32 recordsPerBuffer     = 10;
-            UInt32 buffersPerAcquisition= 1;
-            UInt32 recordsPerAcquisition= recordsPerBuffer * buffersPerAcquisition;
-            UInt32 channelCount         = 2;
-
-            UInt32 retCode = AlazarAPI.AlazarSetRecordSize(
-                    boardHandle,
-                    preTriggerSamples,
-                    postTriggerSamples);
-
-            if (retCode != AlazarAPI.ApiSuccess)
+                AlazarAPI.ETR_2V5);
+                if (retCode != AlazarAPI.ApiSuccess)
             {
-                string message = "Error: AlazarSetRecordSize failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                string message = "Error: AlazarSetExternalTrigger failed-- " + AlazarAPI.AlazarErrorToText(retCode);
                 System.Windows.MessageBox.Show(message,
                     "Alazar error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
+
+            retCode = AlazarAPI.AlazarSetTriggerTimeOut(boardHandle, 10000);
+                if (retCode!= AlazarAPI.ApiSuccess)
+                {
+                string message = "Error: AlazarSetTriggerTimeout failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                System.Windows.MessageBox.Show(message,
+                    "Alazar error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                }
+
+            retCode = AlazarAPI.AlazarSetTriggerDelay(boardHandle, 128);
+                if (retCode != AlazarAPI.ApiSuccess)
+                {
+                    string message = "Error: AlazarSetTriggerDelay failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                    System.Windows.MessageBox.Show(message,
+                        "Alazar error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
             #endregion
-            
-            #region alazar set Traditional autoDMA
-            retCode = AlazarAPI.AlazarBeforeAsyncRead(
-                boardHandle,
-                AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B,
-                -(int)preTriggerSamples,
-                samplesPerRecord,
-                recordsPerBuffer,
-                recordsPerAcquisition,
-                AlazarAPI.ADMA_EXTERNAL_STARTCAPTURE | AlazarAPI.ADMA_TRADITIONAL_MODE | AlazarAPI.ADMA_ALLOC_BUFFERS);
-            if (retCode != AlazarAPI.ApiSuccess)
+
+            #region alazar calculate record, buffer, acquisition size
+            UInt32 preTriggerSamples        = 0;
+            UInt32 postTriggerSamples       = 8192;
+            UInt32 recordsPerBuffer         = (UInt32)UIData.nLLLinesPerChunk; // 100;
+            UInt32 buffersPerAcquisition    = (UInt32)UIData.nLLChunksPerImage + 1;  // 10
+            UInt32 recordsPerAcquisition    = recordsPerBuffer * buffersPerAcquisition;
+            UInt32 channelCount             = 2;
+
+            // Get the sample size in bits, and the on-board memory size in samples per channel
+            Byte bitsPerSample;
+            UInt32 maxSamplesPerChannel;
+            retCode = AlazarAPI.AlazarGetChannelInfo(boardHandle, &maxSamplesPerChannel, &bitsPerSample);
+                if (retCode != AlazarAPI.ApiSuccess)
             {
-                string message = "Error: AlazarBeforeAsyncRead failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                string message = "Error: AlazarGetChannelInfo failed-- " + AlazarAPI.AlazarErrorToText(retCode);
                 System.Windows.MessageBox.Show(message,
                     "Alazar error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
             }
+
+            // Calculate the size of each DMA buffer in bytes
+            UInt32 bytesPerSample = 2; //((UInt32)bitsPerSample + 7) / 8;
+            UInt32 samplesPerRecord = preTriggerSamples + postTriggerSamples;
+            UInt32 bytesPerRecord = (bytesPerSample * samplesPerRecord);
+            UInt32 bytesPerBuffer = bytesPerRecord * recordsPerBuffer * channelCount;
             #endregion
 
             // set up wait handles to start
@@ -1706,31 +1790,96 @@ namespace nOCT
 
             threadData.mreAcquireAlazarReady.Set();
             threadData.strAcquireAlazarThreadStatus = "r";
-#endregion
+            #endregion
 
-#region main loop
+            #region main loop
             threadData.strAcquireAlazarThreadStatus = "s";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
                 threadData.strAcquireAlazarThreadStatus = "g";
                 while (threadData.mreAcquireAlazarKill.WaitOne(0) == false)
                 {
-                    nStatus = WaitHandle.WaitAny(pweLoop, 10000);
-                    if (nStatus == 0)
+                    #region arm Alazar board to begin acquisition
+                    retCode = AlazarAPI.AlazarBeforeAsyncRead(
+                        boardHandle,
+                        AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B,
+                        -(int)preTriggerSamples,
+                        samplesPerRecord,
+                        recordsPerBuffer,
+                        2*recordsPerAcquisition,
+                        AlazarAPI.ADMA_EXTERNAL_STARTCAPTURE | AlazarAPI.ADMA_NPT | AlazarAPI.ADMA_FIFO_ONLY_STREAMING | AlazarAPI.ADMA_ALLOC_BUFFERS
+                        );
+                    if (retCode != AlazarAPI.ApiSuccess)
                     {
-                        // kill
+                        string message = "Error: AlazarBeforeAsyncRead failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                        System.Windows.MessageBox.Show(message,
+                            "Alazar error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    }
+                    
+                    retCode = AlazarAPI.AlazarSetRecordSize(
+                        boardHandle,
+                        preTriggerSamples,
+                        postTriggerSamples);
+                    if (retCode != AlazarAPI.ApiSuccess)
+                    {
+                        string message = "Error: AlazarSetRecordSize failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                        System.Windows.MessageBox.Show(message,
+                            "Alazar error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    }
+
+                    AlazarAPI.AlazarStartCapture(boardHandle); // Arm board to begin the acquisition
+                    if (retCode != AlazarAPI.ApiSuccess)
+                    {
+                        string message = "Error: AlazarStartCapture failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                        System.Windows.MessageBox.Show(message,
+                            "Alazar error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+                    }
+                    #endregion
+
+                    nStatus = WaitHandle.WaitAny(pweLoop, 10000);
+                    if (nStatus == 0) // nStatus==0 indicates threadData.mreAcquireAlazarKill was set
+                    {
+                        AlazarAPI.AlazarAbortAsyncRead(boardHandle); // Abort the acquisition and release resources, 
+                                                                        // must be called after acquisition.
+                                                                        // kill
                     }  // if (nStatus
-                    if (nStatus == 1)
+
+                    if (nStatus == 1) //nStatus == 1 indicates threadData.mreAcquireNodeReady was set
                     {
                         threadData.areAcquireAlazarGo.Set();
                         threadData.strAcquireAlazarThreadStatus = "G";
                         if (nMode > 0)
                         {
-                            if (threadData.nSystemActual == 0)
+                            if (threadData.nSystemActual == 0) // What does .nSystemActual==0 indicate? SD-OCT?
                             {
                                 threadData.strAcquireAlazarThreadStatus = "Wa";
-                                ; // real acquisition
-                                Thread.Sleep(1);
+                                for(int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
+                                { 
+                                    fixed(void* vPtr = threadData.nodeAcquire.Value.pnAlazar[nChunk])
+                                    {
+                                        retCode = AlazarAPI.AlazarWaitNextAsyncBufferComplete(
+                                            boardHandle,
+                                            vPtr,
+                                            bytesPerBuffer, // U32 bytesToCopy -- bytes to copy into buffer
+                                            5000);          // U32 timeout_ms -- time to wait for buffer
+                                        if (retCode != AlazarAPI.ApiSuccess)
+                                        {
+                                            string message = "Error: AlazarWaitNextAsyncBufferComplete failed-- " + AlazarAPI.AlazarErrorToText(retCode);
+                                            System.Windows.MessageBox.Show(message,
+                                                "Alazar error",
+                                                MessageBoxButton.OK,
+                                                MessageBoxImage.Warning);
+                                            break;
+                                        }
+                                    }
+                                }
+                                // real acquisition
                             }
                             else
                             {
@@ -1752,9 +1901,9 @@ namespace nOCT
                     }  // if (nStatus
                 }  // while (threadData.mreAcquireAlazarKill.WaitOne
             }  // if (WaitHandle.WaitAny
-#endregion
+            #endregion
 
-#region cleanup
+            #region cleanup
             if (bTroublemaker)
             {
                 threadData.mreAcquireAlazarDead.Set();
@@ -1775,7 +1924,7 @@ namespace nOCT
 
         void AcquireDAQThread()
         {
-#region initializing
+            #region initializing
             threadData.strAcquireDAQThreadStatus = "i";
 
             // initialization
@@ -1815,7 +1964,7 @@ namespace nOCT
             threadData.strAcquireDAQThreadStatus = "r";
 #endregion
 
-#region main loop
+            #region main loop
             threadData.strAcquireDAQThreadStatus = "s";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
@@ -1861,7 +2010,7 @@ namespace nOCT
             }  // if (WaitHandle.WaitAny
 #endregion
 
-#region cleanup
+            #region cleanup
             if (bTroublemaker)
             {
                 threadData.mreAcquireDAQDead.Set();
@@ -2119,7 +2268,7 @@ namespace nOCT
 
         void SaveThread()   // 20201208 editing 
         {
-#region initializing
+            #region initializing
             threadData.strSaveThreadStatus = "Initializing...";
 
             // initialization
@@ -2131,10 +2280,11 @@ namespace nOCT
             Thread.Sleep(1);
             string strTest;
             int nOffset1 = 4096;
-            int nOffset2; 
+            int nOffset2;
 
             // parameters for saving 
             UInt16[][] pnAlazar;
+
             double[] pnDAQ;
             Int16[] pnIMAQ; 
             Int16[] pnIMAQParallel;
@@ -2155,6 +2305,22 @@ namespace nOCT
             // PS-SD-OCT
             pnIMAQParallel = new Int16[nNumberLines * nLineLength];
             pnIMAQPerpendicular = new Int16[nNumberLines * nLineLength];
+
+            // OFDI
+            #region assign pnAlazar outside switch to fix downstream scoping issue
+            pnAlazar = new UInt16[UIData.nLLChunksPerImage][];
+            nChannels = 0;
+            if (UIData.bLLAlazarCh1 == true)
+                nChannels++;
+            if (UIData.bLLAlazarCh2 == true)
+                nChannels++;
+            for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
+            {
+                pnAlazar[nChunk] = new UInt16[nChannels * nLinesPerChunk * nLineLength];
+                Array.Clear(pnAlazar[nChunk], 0, pnAlazar[nChunk].Length);
+            } // for nChunk
+            Array.Clear(pnDAQ, 0, pnDAQ.Length);
+            #endregion
 
             switch (UIData.nLLSystemType)
             {
@@ -2178,6 +2344,7 @@ namespace nOCT
                     if (UIData.bLLAlazarCh2 == true)
                         nChannels++;
                     pnAlazar = new UInt16[nNumberChunks][];
+
                     for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
                     {
                         pnAlazar[nChunk] = new UInt16[nChannels * nLinesPerChunk * nLineLength];  // 2 - MZI + OCT
@@ -2207,9 +2374,9 @@ namespace nOCT
             // initialization complete
             threadData.mreSaveReady.Set();
             threadData.strSaveThreadStatus = "Ready!";
-#endregion
+            #endregion
 
-#region main loop
+            #region main loop
             threadData.strSaveThreadStatus = "Set...";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
@@ -2228,33 +2395,37 @@ namespace nOCT
                             threadData.nSaveNodeID = nodeSave.Value.nNodeID;                            
                             if (nodeSave.Value.bRecord)
                             {
+                                
+
                                 // actual save
                                 // Thread.Sleep(600);
                                 FileStream fs = File.Open(nodeSave.Value.strFilename, FileMode.Create);
                                 BinaryWriter binWriter = new BinaryWriter(fs);
                                 strTest = nodeSave.Value.strFilename;   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                
 
                                 switch (UIData.nLLSystemType)
                                 {
                                     case 0: // SD-OCT
+                                        #region SD-OCT
                                         strTest = "nFrameNumber=" + nodeSave.Value.nFramePosition + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nNumberDataArrays=" + 2 + ";";       binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nNumberDataArrays=" + 2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
                                         // header array 1: IMAQ data (parallel and perpendicular)
-                                        strTest = "strVar='pdIMAQ';";                   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset1 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length);    binWriter.Write
-                                            (strTest);
-                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "strDataType='int16';";               binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strVar='pdIMAQ';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset1 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length); binWriter.Write
+                                         (strTest);
+                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strDataType='int16';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
                                         // header array 2: DAQ data
                                         nOffset2 = nOffset1 + nNumberLines * nLineLength * sizeof(Int16);   // two cameras
-                                        strTest = "strVar='pdDAQ';";                    binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset2 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + 4 + ";";            binWriter.Write(strTest.Length);    binWriter.Write(strTest);     // Need double check
-                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "strDataType='double';";              binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strVar='pdDAQ';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + 4 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);     // Need double check
+                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strDataType='double';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
                                         strTest = "END"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
@@ -2262,33 +2433,34 @@ namespace nOCT
                                         fs.Seek(nOffset1, SeekOrigin.Begin);
 
                                         for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
-                                            Array.Copy(nodeSave.Value.pnIMAQ[nChunk], 0, pnIMAQ, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);                                          
+                                            Array.Copy(nodeSave.Value.pnIMAQ[nChunk], 0, pnIMAQ, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);
 
                                         for (int nLine = 0; nLine < nNumberLines; nLine++)
                                             for (int nPoint = 0; nPoint < nLineLength; nPoint++)
                                                 binWriter.Write(pnIMAQ[nLine * nLineLength + nPoint]);
-
+                                        #endregion
                                         break;
                                     case 1: // PS-SD-OCT
-                                        strTest = "nFrameNumber=" + nodeSave.Value.nFramePosition + ";";    binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nNumberDataArrays=" + 2 + ";";       binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        #region PS-SD-OCT
+                                        strTest = "nFrameNumber=" + nodeSave.Value.nFramePosition + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nNumberDataArrays=" + 2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
                                         // header array 1: IMAQ data (parallel and perpendicular)
-                                        strTest = "strVar='pdIMAQx2';";                 binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset1 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "strDataType='int16';";               binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strVar='pdIMAQx2';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset1 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strDataType='int16';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
                                         // header array 2: DAQ data
                                         nOffset2 = nOffset1 + 2 * nNumberLines * nLineLength * sizeof(Int16);   // two cameras
-                                        strTest = "strVar='pdDAQ';";                    binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset2 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + 4 + ";";            binWriter.Write(strTest.Length);    binWriter.Write(strTest);     // Need double check
-                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                        strTest = "strDataType='double';";              binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strVar='pdDAQ';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + 4 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);     // Need double check
+                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strDataType='double';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
-                                        strTest = "END"; binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "END"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
                                         // save array 1: IMAQ data (parallel and perpendicular)
                                         fs.Seek(nOffset1, SeekOrigin.Begin);
@@ -2298,22 +2470,28 @@ namespace nOCT
                                             Array.Copy(nodeSave.Value.pnIMAQParallel[nChunk], 0, pnIMAQParallel, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);
                                             Array.Copy(nodeSave.Value.pnIMAQPerpendicular[nChunk], 0, pnIMAQPerpendicular, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);
 
-                                        }   
-                                        for(int nLine = 0; nLine < nNumberLines; nLine++)
+                                        }
+                                        for (int nLine = 0; nLine < nNumberLines; nLine++)
                                         {
                                             for (int nPoint = 0; nPoint < nLineLength; nPoint++)
                                             {
                                                 binWriter.Write(pnIMAQParallel[nLine * nLineLength + nPoint]);
                                                 binWriter.Write(pnIMAQPerpendicular[nLine * nLineLength + nPoint]);
                                             }
-                                        } 
-
+                                        }
+                                        #endregion
                                         break;
                                     case 2: // line field
 
                                         break;
                                     case 3: // OFDI (pgreg002 here is a section to see how the arrays are defined in each node
-                                        
+                                        fs.Seek(0, SeekOrigin.Begin);
+                                        for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
+                                            Array.Copy(nodeSave.Value.pnAlazar[nChunk], 0, pnAlazar[nChunk], 0, nLinesPerChunk * nLineLength);
+
+                                        for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
+                                            for (int nPoint = 0; nPoint < nLinesPerChunk * nLineLength; nPoint++)
+                                                binWriter.Write(pnAlazar[nChunk][nPoint]);
                                         break;
                                     case 4: // PS-OFDI
 
@@ -2359,25 +2537,25 @@ namespace nOCT
                     }  // if (nodeSave.Value.rwls.TryEnterReadLock
                 }  // while (WaitHandle.WaitAny
             }  // if (WaitHandle.WaitAny
-#endregion
+            #endregion
 
-#region cleanup
+            #region cleanup
             if (bTroublemaker)
             {
                 threadData.mreSaveDead.Set();
             }
             else
             {  // if (bTroublemaker
-#region cleanup
+            #region cleanup
                 threadData.strSaveThreadStatus = "Cleaning up...";
                 // clean up code
                 ;
                 // signal other threads
                 threadData.mreSaveDead.Set();
                 threadData.strSaveThreadStatus = "Done.";
-#endregion
+            #endregion
             }  // if (bTroublemaker
-#endregion
+            #endregion
 
         }   // void SaveThread
 
@@ -2513,25 +2691,30 @@ namespace nOCT
                                 case 3: // OFDI
                                     if (UIData.nLLChunksPerImage > 0)
                                     {
+                                        #region copy DAQ data
                                         Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
+                                        #endregion
+                                        #region copy Alazar data
                                         for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
                                         {
-                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * 2 * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnAlazar[nChunk].Length);
-//                                            Buffer.BlockCopy(nodeProcess.Value.pnIMAQParallel[nChunk], 0, threadData.pnProcess1IMAQParallel, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnIMAQParallel[nChunk].Length);
-//                                            Buffer.BlockCopy(nodeProcess.Value.pnIMAQPerpendicular[nChunk], 0, threadData.pnProcess1IMAQPerpendicular, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnIMAQPerpendicular[nChunk].Length);
+                                            //Array.Copy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pfProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, UIData.nLLLinesPerChunk * threadData.nRawAlineLength);
+                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength * 2, nodeProcess.Value.pnAlazar[nChunk].Length * 2);
                                         }   // for (int nChunk
+                                        #endregion
                                     }   // if (UIData.nLLChunksPerImage
                                     break;
                                 case 4: // PS OFDI
                                     if (UIData.nLLChunksPerImage > 0)
                                     {
+                                        #region copy DAQ data
                                         Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
+                                        #endregion
+                                        #region copy Alazar data
                                         for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
                                         {
-                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * 2 * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnAlazar[nChunk].Length);
-//                                            Buffer.BlockCopy(nodeProcess.Value.pnIMAQParallel[nChunk], 0, threadData.pnProcess1IMAQParallel, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnIMAQParallel[nChunk].Length);
-//                                            Buffer.BlockCopy(nodeProcess.Value.pnIMAQPerpendicular[nChunk], 0, threadData.pnProcess1IMAQPerpendicular, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnIMAQPerpendicular[nChunk].Length);
+                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength * 2, nodeProcess.Value.pnAlazar[nChunk].Length * 2);
                                         }   // for (int nChunk
+                                        #endregion
                                     }   // if (UIData.nLLChunksPerImage
                                     break;
                             }   // switch (UIData.nLLSystemType
@@ -2547,10 +2730,65 @@ namespace nOCT
                             {
                                 switch (UIData.nULDisplayIndex)
                                 {
-                                    case 0: // Alazar
-                                        Array.Clear(UIData.pfULImage, 0, UIData.pfULImage.Length);
-                                        Array.Clear(UIData.pfULTop, 0, UIData.pfULTop.Length);
-                                        Array.Clear(UIData.pfULLeft, 0, UIData.pfULLeft.Length);
+                                    case 0: // Alazar      
+                                        #region main
+                                        for (int n = 0; n < threadData.pnProcess1Alazar.Length; n++)
+                                            threadData.pnProcess1Alazar[n] = (ushort)(threadData.pnProcess1Alazar[n] >> 4);
+                                        for (int nSample = 0; nSample < threadData.pnProcess1Alazar.Length-2; nSample +=2)
+                                        {
+                                            threadData.pnProcess1AlazarOCT[nSample/2] = threadData.pnProcess1Alazar[nSample];
+                                            threadData.pnProcess1AlazarMZI[nSample/2 + 1] = threadData.pnProcess1Alazar[nSample + 1];
+                                        }
+                                        
+                                        switch (UIData.nULAlazarChannelIndex)
+                                        {
+                                            case 0: // OCT
+                                                Array.Copy(threadData.pnProcess1AlazarOCT, threadData.pfProcess1AlazarOCT, threadData.pnProcess1AlazarOCT.Length);
+                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage; nLine++)
+                                                {
+                                                    for (int mPoint = 0; mPoint < threadData.nRawAlineLength; mPoint++)
+                                                    {
+                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarOCT[nLine * threadData.nRawAlineLength + mPoint];
+                                                    }
+                                                }
+                                                break;
+                                            case 1: // MZI
+                                                Array.Copy(threadData.pnProcess1AlazarMZI, threadData.pfProcess1AlazarMZI, threadData.pnProcess1AlazarMZI.Length);
+                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage; nLine++)
+                                                {
+                                                    for (int mPoint = 0; mPoint < threadData.nRawAlineLength; mPoint++)
+                                                    {
+                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarMZI[nLine * threadData.nRawAlineLength + mPoint];
+                                                    }
+                                                }
+                                                break;
+                                            case 2: // Both channels
+                                                Array.Copy(threadData.pnProcess1Alazar, threadData.pfProcess1Alazar, threadData.pnProcess1Alazar.Length);
+                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage; nLine++)
+                                                {
+                                                    for (int mPoint = 0; mPoint < threadData.nRawAlineLength; mPoint++)
+                                                    {
+                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1Alazar[nLine * threadData.nRawAlineLength + mPoint];
+                                                    }
+                                                }
+                                                break;
+                                        }
+                                        //Array.Clear(UIData.pfULImage, 0, UIData.pfULImage.Length);
+                                        #endregion
+                                        #region left
+                                        nAline = UIData.nULLeft;
+                                        if (nAline < 0) nAline = 0;
+                                        if (nAline >= threadData.nRawNumberAlines) nAline = threadData.nRawNumberAlines - 1;
+                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
+                                            UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
+                                        #endregion
+                                        #region top
+                                        nPoint = UIData.nULTop;
+                                        if (nPoint < 0) nPoint = 0;
+                                        if (nPoint >= threadData.nRawAlineLength) nPoint = threadData.nRawAlineLength - 1;
+                                        for (nAline = 0; nAline < threadData.nRawNumberAlines; nAline++)
+                                            UIData.pfULTop[0, nAline] = UIData.pfULImage[nAline, nPoint];
+                                        #endregion
                                         break;
                                     case 1: // DAQ
                                         Array.Clear(UIData.pfULImage, 0, UIData.pfULImage.Length);
@@ -2558,6 +2796,7 @@ namespace nOCT
                                         Array.Clear(UIData.pfULLeft, 0, UIData.pfULLeft.Length);
                                         break;
                                     case 2: // IMAQ
+                                        #region IMAQ
                                         switch (UIData.nLLSystemType)
                                         {
                                             case 0: // SD-OCT
@@ -2716,6 +2955,7 @@ namespace nOCT
                                                 Array.Clear(UIData.pfULLeft, 0, UIData.pfULLeft.Length);
                                                 break;
                                         }   // switch (UIData.nLLSystemType
+                                        #endregion
                                         break;
                                     case 3: // intensity
                                         break;
@@ -3557,9 +3797,24 @@ namespace nOCT
 
             #endregion OCT data structures
 
+            #region nOCTcuda initialization
+
+            internal static class UnsafeNativeMethods
+            {
+            [DllImport("nOCTcuda.dll")]
+                public static extern "C" void initialize();
+                public static extern "C" void copyFromHostToDevice_nOCTcuda();
+                public static extern "C" void calculateReferenceArrays_nOCTcuda();
+            }
+
+            UnsafeNativeMethods.initialize();
+
+            #endregion //nOCT initialization
+            
             #endregion variables for main loop
 
             // initialization complete
+            
             threadData.mreProcess1Ready.Set();
             threadData.strProcess1ThreadStatus = "Ready!";
 
@@ -3724,6 +3979,7 @@ namespace nOCT
                             case 2: // line field
                                 break;
                             case 3: // OFDI
+                                UnsafeNativeMethods.calculateReferenceArrays_nOCTcuda();
                                 break;
                             case 4: // PS OFDI
                                 break;
@@ -4407,173 +4663,173 @@ namespace nOCT
 
         void Process2Thread()
         {
-#region initializing
-            threadData.strProcess2ThreadStatus = "Initializing...";
+            #region initializing
+                        threadData.strProcess2ThreadStatus = "Initializing...";
 
-            // initialization
-            bool bTroublemaker = false;
+                        // initialization
+                        bool bTroublemaker = false;
 
-            int nProcess2Type;
+                        int nProcess2Type;
 
-            int nAline, nPoint;
+                        int nAline, nPoint;
 
-            // set up wait handles to start
-            WaitHandle[] pweStart = new WaitHandle[2];
-            pweStart[0] = threadData.mreProcess2Kill;
-            pweStart[1] = threadData.mreProcess2Run;
+                        // set up wait handles to start
+                        WaitHandle[] pweStart = new WaitHandle[2];
+                        pweStart[0] = threadData.mreProcess2Kill;
+                        pweStart[1] = threadData.mreProcess2Run;
 
-            WaitHandle[] pweLoop = new WaitHandle[2];
-            pweLoop[0] = threadData.mreProcess2Kill;
-            pweLoop[1] = threadData.mreProcess2Action;
+                        WaitHandle[] pweLoop = new WaitHandle[2];
+                        pweLoop[0] = threadData.mreProcess2Kill;
+                        pweLoop[1] = threadData.mreProcess2Action;
 
-            // initialization complete
-            threadData.mreProcess2Ready.Set();
-            threadData.strProcess2ThreadStatus = "Ready!";
-#endregion
+                        // initialization complete
+                        threadData.mreProcess2Ready.Set();
+                        threadData.strProcess2ThreadStatus = "Ready!";
+            #endregion
 
-#region main loop
-            threadData.strProcess2ThreadStatus = "Set...";
-            if (WaitHandle.WaitAny(pweStart) == 1)
-            {
-                threadData.strProcess2ThreadStatus = "GO!";
-
-                while (WaitHandle.WaitAny(pweLoop) != 0)
-                {
-                    threadData.mreProcess2Action.Reset();
-                    threadData.strProcess2ThreadStatus = "try read lock!";
-                    if (threadData.rwlsProcess1To2.TryEnterReadLock(1000))
-                    {
-                        threadData.strProcess2ThreadStatus = "working...";
-                        threadData.nProcess2Node = threadData.nProcess1Node;
-                        nProcess2Type = threadData.nProcess2Type;
-
-                        switch (nProcess2Type)
+            #region main loop
+                        threadData.strProcess2ThreadStatus = "Set...";
+                        if (WaitHandle.WaitAny(pweStart) == 1)
                         {
-                            case 0:
-                                threadData.strProcess2ThreadStatus = "...none...";
-                                break;
-                            case 1:
-                                threadData.strProcess2ThreadStatus = "...intensity...";
-                                break;
-                            case 2:
-                                threadData.strProcess2ThreadStatus = "...attenuation...";
-                                break;
-                            case 3:
-                                threadData.strProcess2ThreadStatus = "...phase...";
-                                break;
-                            case 4:
-                                threadData.strProcess2ThreadStatus = "...polarization...";
-                                break;
-                            case 5:
-                                threadData.strProcess2ThreadStatus = "...angiography...";
-                                break;
-                            case 6:
-                                threadData.strProcess2ThreadStatus = "...elastography...";
-                                break;
-                            case 7:
-                                threadData.strProcess2ThreadStatus = "...spectroscopy...";
-                                break;
-                            case 8:
-                                threadData.strProcess2ThreadStatus = "...spectral binning...";
+                            threadData.strProcess2ThreadStatus = "GO!";
 
-                                // call to ipp thread for spectral binning
-                                Thread.Sleep(500);
+                            while (WaitHandle.WaitAny(pweLoop) != 0)
+                            {
+                                threadData.mreProcess2Action.Reset();
+                                threadData.strProcess2ThreadStatus = "try read lock!";
+                                if (threadData.rwlsProcess1To2.TryEnterReadLock(1000))
+                                {
+                                    threadData.strProcess2ThreadStatus = "working...";
+                                    threadData.nProcess2Node = threadData.nProcess1Node;
+                                    nProcess2Type = threadData.nProcess2Type;
 
-                                break;
-                        }   // switch (nProcess2Type
+                                    switch (nProcess2Type)
+                                    {
+                                        case 0:
+                                            threadData.strProcess2ThreadStatus = "...none...";
+                                            break;
+                                        case 1:
+                                            threadData.strProcess2ThreadStatus = "...intensity...";
+                                            break;
+                                        case 2:
+                                            threadData.strProcess2ThreadStatus = "...attenuation...";
+                                            break;
+                                        case 3:
+                                            threadData.strProcess2ThreadStatus = "...phase...";
+                                            break;
+                                        case 4:
+                                            threadData.strProcess2ThreadStatus = "...polarization...";
+                                            break;
+                                        case 5:
+                                            threadData.strProcess2ThreadStatus = "...angiography...";
+                                            break;
+                                        case 6:
+                                            threadData.strProcess2ThreadStatus = "...elastography...";
+                                            break;
+                                        case 7:
+                                            threadData.strProcess2ThreadStatus = "...spectroscopy...";
+                                            break;
+                                        case 8:
+                                            threadData.strProcess2ThreadStatus = "...spectral binning...";
 
-                        threadData.rwlsProcess1To2.ExitReadLock();
+                                            // call to ipp thread for spectral binning
+                                            Thread.Sleep(500);
 
-                        switch (nProcess2Type)
+                                            break;
+                                    }   // switch (nProcess2Type
+
+                                    threadData.rwlsProcess1To2.ExitReadLock();
+
+                                    switch (nProcess2Type)
+                                    {
+                                        case 0:
+                                            threadData.strProcess2ThreadStatus = "...none...";
+                                            break;
+                                        case 1:
+                                            threadData.strProcess2ThreadStatus = "...intensity...";
+                                            break;
+                                        case 2:
+                                            threadData.strProcess2ThreadStatus = "...attenuation...";
+                                            break;
+                                        case 3:
+                                            threadData.strProcess2ThreadStatus = "...phase...";
+                                            break;
+                                        case 4:
+                                            threadData.strProcess2ThreadStatus = "...polarization...";
+                                            break;
+                                        case 5:
+                                            threadData.strProcess2ThreadStatus = "...angiography...";
+                                            break;
+                                        case 6:
+                                            threadData.strProcess2ThreadStatus = "...elastography...";
+                                            break;
+                                        case 7:
+                                            threadData.strProcess2ThreadStatus = "...spectroscopy...";
+                                            break;
+                                        case 8:
+                                            threadData.strProcess2ThreadStatus = "...spectral binning...";
+
+                                            // actual processing
+                                            Thread.Sleep(3000);
+
+                                            // copy data to upper right data structures
+                                            // URImage
+                                            for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
+                                                for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
+                                                    UIData.pfURImage[nAline, nPoint] = (float)(Math.Sqrt(threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] + threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint]));
+                                            // URLeft
+                                            nAline = UIData.nURSpectralBinningLeft;
+                                            if (nAline < 0) nAline = 0;
+                                            if (nAline >= threadData.nProcessedNumberAlines) nAline = threadData.nProcessedNumberAlines - 1;
+                                            for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
+                                                UIData.pfURLeft[0, nPoint] = UIData.pfURImage[nAline, nPoint];
+                                            // URTop
+                                            nPoint = UIData.nURSpectralBinningTop;
+                                            if (nPoint < 0) nPoint = 0;
+                                            if (nPoint >= threadData.nProcessedAlineLength) nPoint = threadData.nProcessedAlineLength - 1;
+                                            for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
+                                                UIData.pfURTop[0, nAline] = UIData.pfURImage[nAline, nPoint];
+
+                                            break;
+                                    }   // switch (nProcess2Type
+
+                                    threadData.strProcess2ThreadStatus = "done!";
+                                }
+                                else
+                                {
+                                    bTroublemaker = true;
+                                    threadData.strProcess2ThreadStatus = "problem!";
+                                    threadData.mreProcess2Kill.Set();
+                                    threadData.mreMainKill.Set();
+                                }
+
+                            }
+
+                        }  // if (WaitHandle.WaitAny
+            #endregion
+
+            #region cleanup
+                        if (bTroublemaker)
                         {
-                            case 0:
-                                threadData.strProcess2ThreadStatus = "...none...";
-                                break;
-                            case 1:
-                                threadData.strProcess2ThreadStatus = "...intensity...";
-                                break;
-                            case 2:
-                                threadData.strProcess2ThreadStatus = "...attenuation...";
-                                break;
-                            case 3:
-                                threadData.strProcess2ThreadStatus = "...phase...";
-                                break;
-                            case 4:
-                                threadData.strProcess2ThreadStatus = "...polarization...";
-                                break;
-                            case 5:
-                                threadData.strProcess2ThreadStatus = "...angiography...";
-                                break;
-                            case 6:
-                                threadData.strProcess2ThreadStatus = "...elastography...";
-                                break;
-                            case 7:
-                                threadData.strProcess2ThreadStatus = "...spectroscopy...";
-                                break;
-                            case 8:
-                                threadData.strProcess2ThreadStatus = "...spectral binning...";
-
-                                // actual processing
-                                Thread.Sleep(3000);
-
-                                // copy data to upper right data structures
-                                // URImage
-                                for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
-                                    for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
-                                        UIData.pfURImage[nAline, nPoint] = (float)(Math.Sqrt(threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] + threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint]));
-                                // URLeft
-                                nAline = UIData.nURSpectralBinningLeft;
-                                if (nAline < 0) nAline = 0;
-                                if (nAline >= threadData.nProcessedNumberAlines) nAline = threadData.nProcessedNumberAlines - 1;
-                                for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
-                                    UIData.pfURLeft[0, nPoint] = UIData.pfURImage[nAline, nPoint];
-                                // URTop
-                                nPoint = UIData.nURSpectralBinningTop;
-                                if (nPoint < 0) nPoint = 0;
-                                if (nPoint >= threadData.nProcessedAlineLength) nPoint = threadData.nProcessedAlineLength - 1;
-                                for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
-                                    UIData.pfURTop[0, nAline] = UIData.pfURImage[nAline, nPoint];
-
-                                break;
-                        }   // switch (nProcess2Type
-
-                        threadData.strProcess2ThreadStatus = "done!";
-                    }
-                    else
-                    {
-                        bTroublemaker = true;
-                        threadData.strProcess2ThreadStatus = "problem!";
-                        threadData.mreProcess2Kill.Set();
-                        threadData.mreMainKill.Set();
-                    }
-
-                }
-
-            }  // if (WaitHandle.WaitAny
-#endregion
-
-#region cleanup
-            if (bTroublemaker)
-            {
-                threadData.mreProcess2Dead.Set();
-            }
-            else
-            {  // if (bTroublemaker
-#region cleanup
-                threadData.strProcess2ThreadStatus = "Cleaning up...";
-                // clean up code
-                threadData.nProcess2Node = -1;
-                // signal other threads
-                threadData.mreProcess2Dead.Set();
-                threadData.strProcess2ThreadStatus = "Done.";
-#endregion
-            }  // if (bTroublemaker
-#endregion
+                            threadData.mreProcess2Dead.Set();
+                        }
+                        else
+                        {  // if (bTroublemaker
+            #region cleanup
+                            threadData.strProcess2ThreadStatus = "Cleaning up...";
+                            // clean up code
+                            threadData.nProcess2Node = -1;
+                            // signal other threads
+                            threadData.mreProcess2Dead.Set();
+                            threadData.strProcess2ThreadStatus = "Done.";
+            #endregion
+                        }  // if (bTroublemaker
+            #endregion
         }
 
         void CleanupThread()
         {
-#region initializing
+            #region initializing
             threadData.strCleanupThreadStatus = "Initializing...";
 
             // initialization
@@ -4593,9 +4849,9 @@ namespace nOCT
             // initialization complete
             threadData.mreCleanupReady.Set();
             threadData.strCleanupThreadStatus = "Ready!";
-#endregion
+            #endregion
 
-#region main loop
+            #region main loop
             threadData.strCleanupThreadStatus = "Set...";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
@@ -4643,25 +4899,25 @@ namespace nOCT
 
                 }  // while (WaitHandle.WaitAny
             }  // if (WaitHandle.WaitAny
-#endregion
+            #endregion
 
-#region cleanup
+            #region cleanup
             if (bTroublemaker)
             {
                 threadData.mreCleanupDead.Set();
             }
             else
             {  // if (bTroublemaker
-#region cleanup
+                #region cleanup
                 threadData.strCleanupThreadStatus = "Cleaning up...";
                 // clean up code
                 ;
                 // signal other threads
                 threadData.mreCleanupDead.Set();
                 threadData.strCleanupThreadStatus = "Done.";
-#endregion
+                #endregion
             }  // if (bTroublemaker
-#endregion
+            #endregion
 
         }
 
@@ -4881,6 +5137,14 @@ namespace nOCT
             set { _fULAlazarMin = value; OnPropertyChanged(name_fULAlazarMin); }
         }   // public float fULAlazarMin
 
+        public string name_nULAlazarChannelIndex = "nULAlazarChannelIndex";
+        private int _nULAlazarChannelIndex;
+        public int nULAlazarChannelIndex
+        {
+            get { return _nULAlazarChannelIndex; }
+            set { _nULAlazarChannelIndex = value; OnPropertyChanged(name_nULAlazarChannelIndex); }
+        }
+
         #endregion alazar
 
         #region DAQ
@@ -5033,7 +5297,7 @@ namespace nOCT
             set { _nURSpectralBinningLeft = value; OnPropertyChanged(name_nURSpectralBinningLeft); }
         }   // public int nURSpectralBinningLeft
 
-#endregion
+        #endregion
 
         #region LL
 
@@ -5751,102 +6015,107 @@ namespace nOCT
 
         public bool bRecord = false;
 
-#region MainThread
-        public Thread threadMain;
-        public ManualResetEvent mreMainReady;
-        public ManualResetEvent mreMainRun;
-        public ManualResetEvent mreMainKill;
-        public ManualResetEvent mreMainDead;
-        public string strMainThreadStatus = "XXX";
-#endregion
+        #region MainThread
+                public Thread threadMain;
+                public ManualResetEvent mreMainReady;
+                public ManualResetEvent mreMainRun;
+                public ManualResetEvent mreMainKill;
+                public ManualResetEvent mreMainDead;
+                public string strMainThreadStatus = "XXX";
+        #endregion
 
-#region OutputThread
-        public Thread threadOutput;
-        public ManualResetEvent mreOutputReady;
-        public ManualResetEvent mreOutputRun;
-        public ManualResetEvent mreOutputKill;
-        public ManualResetEvent mreOutputDead;
-        public ManualResetEvent mreOutputUpdate;
-        public string strOutputThreadStatus = "XXX";
-#endregion
+        #region OutputThread
+                public Thread threadOutput;
+                public ManualResetEvent mreOutputReady;
+                public ManualResetEvent mreOutputRun;
+                public ManualResetEvent mreOutputKill;
+                public ManualResetEvent mreOutputDead;
+                public ManualResetEvent mreOutputUpdate;
+                public string strOutputThreadStatus = "XXX";
+        #endregion
 
-#region AcquireThread
-        public Thread threadAcquire;
-        public ManualResetEvent mreAcquireReady;
-        public ManualResetEvent mreAcquireRun;
-        public ManualResetEvent mreAcquireKill;
-        public ManualResetEvent mreAcquireDead;
-        public SemaphoreSlim ssAcquireComplete;
-        public string strAcquireThreadStatus = "XXX";
-        /* Begin: 20201208 editing JL */
-        public int nAcquisitionNodeID;
-        public int nFileNumber = 100001; 
-        public int nFramePosition = 1;
-        /* End: 20201208 editing JL */
-#endregion
+        #region AcquireThread
+                public Thread threadAcquire;
+                public ManualResetEvent mreAcquireReady;
+                public ManualResetEvent mreAcquireRun;
+                public ManualResetEvent mreAcquireKill;
+                public ManualResetEvent mreAcquireDead;
+                public SemaphoreSlim ssAcquireComplete;
+                public string strAcquireThreadStatus = "XXX";
+                /* Begin: 20201208 editing JL */
+                public int nAcquisitionNodeID;
+                public int nFileNumber = 100001; 
+                public int nFramePosition = 1;
+                /* End: 20201208 editing JL */
+        #endregion
 
         public int nSystemActual;
         public LinkedListNode<CDataNode> nodeAcquire;
         public ManualResetEvent mreAcquireNodeReady;
 
-#region AcquireAlazarThread
-        public Thread threadAcquireAlazar;
-        public ManualResetEvent mreAcquireAlazarReady;
-        public ManualResetEvent mreAcquireAlazarRun;
-        public ManualResetEvent mreAcquireAlazarKill;
-        public ManualResetEvent mreAcquireAlazarDead;
-        public AutoResetEvent areAcquireAlazarGo;
-        public AutoResetEvent areAcquireAlazarComplete;
-        public string strAcquireAlazarThreadStatus = "XAla";
-#endregion
+        #region AcquireAlazarThread
+                public Thread threadAcquireAlazar;
+                public ManualResetEvent mreAcquireAlazarReady;
+                public ManualResetEvent mreAcquireAlazarRun;
+                public ManualResetEvent mreAcquireAlazarKill;
+                public ManualResetEvent mreAcquireAlazarDead;
+                public AutoResetEvent areAcquireAlazarGo;
+                public AutoResetEvent areAcquireAlazarComplete;
+                public string strAcquireAlazarThreadStatus = "XAla";
+        #endregion
 
-#region AcquireDAQThread
-        public Thread threadAcquireDAQ;
-        public ManualResetEvent mreAcquireDAQReady;
-        public ManualResetEvent mreAcquireDAQRun;
-        public ManualResetEvent mreAcquireDAQKill;
-        public ManualResetEvent mreAcquireDAQDead;
-        public AutoResetEvent areAcquireDAQGo;
-        public AutoResetEvent areAcquireDAQComplete;
-        public string strAcquireDAQThreadStatus = "XDAQ";
-#endregion
+        #region AcquireDAQThread
+                public Thread threadAcquireDAQ;
+                public ManualResetEvent mreAcquireDAQReady;
+                public ManualResetEvent mreAcquireDAQRun;
+                public ManualResetEvent mreAcquireDAQKill;
+                public ManualResetEvent mreAcquireDAQDead;
+                public AutoResetEvent areAcquireDAQGo;
+                public AutoResetEvent areAcquireDAQComplete;
+                public string strAcquireDAQThreadStatus = "XDAQ";
+        #endregion
 
-#region AcquireIMAQThread
-        public Thread threadAcquireIMAQ;
-        public ManualResetEvent mreAcquireIMAQReady;
-        public ManualResetEvent mreAcquireIMAQRun;
-        public ManualResetEvent mreAcquireIMAQKill;
-        public ManualResetEvent mreAcquireIMAQDead;
-        public AutoResetEvent areAcquireIMAQGo;
-        public AutoResetEvent areAcquireIMAQComplete;
-        public string strAcquireIMAQThreadStatus = "XIMQ";
-#endregion
+        #region AcquireIMAQThread
+                public Thread threadAcquireIMAQ;
+                public ManualResetEvent mreAcquireIMAQReady;
+                public ManualResetEvent mreAcquireIMAQRun;
+                public ManualResetEvent mreAcquireIMAQKill;
+                public ManualResetEvent mreAcquireIMAQDead;
+                public AutoResetEvent areAcquireIMAQGo;
+                public AutoResetEvent areAcquireIMAQComplete;
+                public string strAcquireIMAQThreadStatus = "XIMQ";
+        #endregion
 
-#region SaveThread
-        public Thread threadSave;
-        public ManualResetEvent mreSaveReady;
-        public ManualResetEvent mreSaveRun;
-        public ManualResetEvent mreSaveKill;
-        public ManualResetEvent mreSaveDead;
-        public SemaphoreSlim ssSaveAction;
-        public string strSaveThreadStatus = "XXX";
-        public int nSaveNodeID; 
-#endregion
+        #region SaveThread
+                public Thread threadSave;
+                public ManualResetEvent mreSaveReady;
+                public ManualResetEvent mreSaveRun;
+                public ManualResetEvent mreSaveKill;
+                public ManualResetEvent mreSaveDead;
+                public SemaphoreSlim ssSaveAction;
+                public string strSaveThreadStatus = "XXX";
+                public int nSaveNodeID; 
+        #endregion
 
-#region ProcessThread
-        public Thread threadProcess;
-        public ManualResetEvent mreProcessReady;
-        public ManualResetEvent mreProcessRun;
-        public ManualResetEvent mreProcessKill;
-        public ManualResetEvent mreProcessDead;
-        public SemaphoreSlim ssProcessAction;
-        public string strProcessThreadStatus = "XXX";
-#endregion
+        #region ProcessThread
+                public Thread threadProcess;
+                public ManualResetEvent mreProcessReady;
+                public ManualResetEvent mreProcessRun;
+                public ManualResetEvent mreProcessKill;
+                public ManualResetEvent mreProcessDead;
+                public SemaphoreSlim ssProcessAction;
+                public string strProcessThreadStatus = "XXX";
+        #endregion
 
         public ReaderWriterLockSlim rwlsProcessTo1;
         public int nProcess1WriteTimeout;
         public int nProcess1ProcessingType;
         public UInt16[] pnProcess1Alazar;
+        public UInt16[] pnProcess1AlazarMZI;
+        public UInt16[] pnProcess1AlazarOCT;
+        public float[] pfProcess1Alazar;
+        public float[] pfProcess1AlazarMZI;
+        public float[] pfProcess1AlazarOCT;
         public float[] pfProcess1DAQ;
         public float[] pfProcess1IMAQParallel;
         public float[] pfProcess1IMAQPerpendicular;
@@ -5854,15 +6123,15 @@ namespace nOCT
         public int nProcess1Node = -1;
         public int nProcessTo1Data = 0;
 
-#region Process1Thread
-        public Thread threadProcess1;
-        public ManualResetEvent mreProcess1Ready;
-        public ManualResetEvent mreProcess1Run;
-        public ManualResetEvent mreProcess1Kill;
-        public ManualResetEvent mreProcess1Dead;
-        public ManualResetEvent mreProcess1Action;
-        public string strProcess1ThreadStatus = "XXX";
-#endregion
+        #region Process1Thread
+                public Thread threadProcess1;
+                public ManualResetEvent mreProcess1Ready;
+                public ManualResetEvent mreProcess1Run;
+                public ManualResetEvent mreProcess1Kill;
+                public ManualResetEvent mreProcess1Dead;
+                public ManualResetEvent mreProcess1Action;
+                public string strProcess1ThreadStatus = "XXX";
+        #endregion
 
         public int nProcess2Type;
 
@@ -5883,124 +6152,124 @@ namespace nOCT
         public int nProcess2ANode = -1;
         public int nProcess1To2AData = 0;
 
-#region Process2Thread
-        public Thread threadProcess2;
-        public ManualResetEvent mreProcess2Ready;
-        public ManualResetEvent mreProcess2Run;
-        public ManualResetEvent mreProcess2Kill;
-        public ManualResetEvent mreProcess2Dead;
-        public ManualResetEvent mreProcess2Action;
-        public string strProcess2ThreadStatus = "XXX";
-#endregion
+        #region Process2Thread
+                public Thread threadProcess2;
+                public ManualResetEvent mreProcess2Ready;
+                public ManualResetEvent mreProcess2Run;
+                public ManualResetEvent mreProcess2Kill;
+                public ManualResetEvent mreProcess2Dead;
+                public ManualResetEvent mreProcess2Action;
+                public string strProcess2ThreadStatus = "XXX";
+        #endregion
 
-#region CleanupThread
-        public Thread threadCleanup;
-        public ManualResetEvent mreCleanupReady;
-        public ManualResetEvent mreCleanupRun;
-        public ManualResetEvent mreCleanupKill;
-        public ManualResetEvent mreCleanupDead;
-        public ManualResetEvent mreCleanupAction;
-        public string strCleanupThreadStatus = "XXX";
-#endregion
+        #region CleanupThread
+                public Thread threadCleanup;
+                public ManualResetEvent mreCleanupReady;
+                public ManualResetEvent mreCleanupRun;
+                public ManualResetEvent mreCleanupKill;
+                public ManualResetEvent mreCleanupDead;
+                public ManualResetEvent mreCleanupAction;
+                public string strCleanupThreadStatus = "XXX";
+        #endregion
 
 
         public void Initialize()
         {
-#region MainThread
-            mreMainReady = new ManualResetEvent(false);
-            mreMainRun = new ManualResetEvent(false);
-            mreMainKill = new ManualResetEvent(false);
-            mreMainDead = new ManualResetEvent(false);
-#endregion
+            #region MainThread
+                        mreMainReady = new ManualResetEvent(false);
+                        mreMainRun = new ManualResetEvent(false);
+                        mreMainKill = new ManualResetEvent(false);
+                        mreMainDead = new ManualResetEvent(false);
+            #endregion
 
-#region OutputThread
-            mreOutputReady = new ManualResetEvent(false);
-            mreOutputRun = new ManualResetEvent(false);
-            mreOutputKill = new ManualResetEvent(false);
-            mreOutputDead = new ManualResetEvent(false);
-            mreOutputUpdate = new ManualResetEvent(false);
-#endregion
+            #region OutputThread
+                        mreOutputReady = new ManualResetEvent(false);
+                        mreOutputRun = new ManualResetEvent(false);
+                        mreOutputKill = new ManualResetEvent(false);
+                        mreOutputDead = new ManualResetEvent(false);
+                        mreOutputUpdate = new ManualResetEvent(false);
+            #endregion
 
-#region AcquireThread
-            mreAcquireReady = new ManualResetEvent(false);
-            mreAcquireRun = new ManualResetEvent(false);
-            mreAcquireKill = new ManualResetEvent(false);
-            mreAcquireDead = new ManualResetEvent(false);
-            ssAcquireComplete = new SemaphoreSlim(0);
-#endregion
+            #region AcquireThread
+                        mreAcquireReady = new ManualResetEvent(false);
+                        mreAcquireRun = new ManualResetEvent(false);
+                        mreAcquireKill = new ManualResetEvent(false);
+                        mreAcquireDead = new ManualResetEvent(false);
+                        ssAcquireComplete = new SemaphoreSlim(0);
+            #endregion
 
             mreAcquireNodeReady = new ManualResetEvent(false);
 
-#region AcquireAlazarThread
-            mreAcquireAlazarReady = new ManualResetEvent(false);
-            mreAcquireAlazarRun = new ManualResetEvent(false);
-            mreAcquireAlazarKill = new ManualResetEvent(false);
-            mreAcquireAlazarDead = new ManualResetEvent(false);
-            areAcquireAlazarGo = new AutoResetEvent(false);
-            areAcquireAlazarComplete = new AutoResetEvent(false);
-#endregion
+            #region AcquireAlazarThread
+                        mreAcquireAlazarReady = new ManualResetEvent(false);
+                        mreAcquireAlazarRun = new ManualResetEvent(false);
+                        mreAcquireAlazarKill = new ManualResetEvent(false);
+                        mreAcquireAlazarDead = new ManualResetEvent(false);
+                        areAcquireAlazarGo = new AutoResetEvent(false);
+                        areAcquireAlazarComplete = new AutoResetEvent(false);
+            #endregion
 
-#region AcquireDAQThread
-            mreAcquireDAQReady = new ManualResetEvent(false);
-            mreAcquireDAQRun = new ManualResetEvent(false);
-            mreAcquireDAQKill = new ManualResetEvent(false);
-            mreAcquireDAQDead = new ManualResetEvent(false);
-            areAcquireDAQGo = new AutoResetEvent(false);
-            areAcquireDAQComplete = new AutoResetEvent(false);
-#endregion
+            #region AcquireDAQThread
+                        mreAcquireDAQReady = new ManualResetEvent(false);
+                        mreAcquireDAQRun = new ManualResetEvent(false);
+                        mreAcquireDAQKill = new ManualResetEvent(false);
+                        mreAcquireDAQDead = new ManualResetEvent(false);
+                        areAcquireDAQGo = new AutoResetEvent(false);
+                        areAcquireDAQComplete = new AutoResetEvent(false);
+            #endregion
 
-#region AcquireIMAQThread
-            mreAcquireIMAQReady = new ManualResetEvent(false);
-            mreAcquireIMAQRun = new ManualResetEvent(false);
-            mreAcquireIMAQKill = new ManualResetEvent(false);
-            mreAcquireIMAQDead = new ManualResetEvent(false);
-            areAcquireIMAQGo = new AutoResetEvent(false);
-            areAcquireIMAQComplete = new AutoResetEvent(false);
-#endregion
+            #region AcquireIMAQThread
+                        mreAcquireIMAQReady = new ManualResetEvent(false);
+                        mreAcquireIMAQRun = new ManualResetEvent(false);
+                        mreAcquireIMAQKill = new ManualResetEvent(false);
+                        mreAcquireIMAQDead = new ManualResetEvent(false);
+                        areAcquireIMAQGo = new AutoResetEvent(false);
+                        areAcquireIMAQComplete = new AutoResetEvent(false);
+            #endregion
 
-#region SaveThead
-            mreSaveReady = new ManualResetEvent(false);
-            mreSaveRun = new ManualResetEvent(false);
-            mreSaveKill = new ManualResetEvent(false);
-            mreSaveDead = new ManualResetEvent(false);
-            ssSaveAction = new SemaphoreSlim(0);
-#endregion
+            #region SaveThead
+                        mreSaveReady = new ManualResetEvent(false);
+                        mreSaveRun = new ManualResetEvent(false);
+                        mreSaveKill = new ManualResetEvent(false);
+                        mreSaveDead = new ManualResetEvent(false);
+                        ssSaveAction = new SemaphoreSlim(0);
+            #endregion
 
-#region ProcessThread
-            mreProcessReady = new ManualResetEvent(false);
-            mreProcessRun = new ManualResetEvent(false);
-            mreProcessKill = new ManualResetEvent(false);
-            mreProcessDead = new ManualResetEvent(false);
-            ssProcessAction = new SemaphoreSlim(0);
-#endregion
+            #region ProcessThread
+                        mreProcessReady = new ManualResetEvent(false);
+                        mreProcessRun = new ManualResetEvent(false);
+                        mreProcessKill = new ManualResetEvent(false);
+                        mreProcessDead = new ManualResetEvent(false);
+                        ssProcessAction = new SemaphoreSlim(0);
+            #endregion
 
             rwlsProcessTo1 = new ReaderWriterLockSlim();
 
-#region Process1Thread
-            mreProcess1Ready = new ManualResetEvent(false);
-            mreProcess1Run = new ManualResetEvent(false);
-            mreProcess1Kill = new ManualResetEvent(false);
-            mreProcess1Dead = new ManualResetEvent(false);
-            mreProcess1Action = new ManualResetEvent(true);
-#endregion
+            #region Process1Thread
+                        mreProcess1Ready = new ManualResetEvent(false);
+                        mreProcess1Run = new ManualResetEvent(false);
+                        mreProcess1Kill = new ManualResetEvent(false);
+                        mreProcess1Dead = new ManualResetEvent(false);
+                        mreProcess1Action = new ManualResetEvent(true);
+            #endregion
 
             rwlsProcess1To2 = new ReaderWriterLockSlim();
 
-#region Process2Thread
-            mreProcess2Ready = new ManualResetEvent(false);
-            mreProcess2Run = new ManualResetEvent(false);
-            mreProcess2Kill = new ManualResetEvent(false);
-            mreProcess2Dead = new ManualResetEvent(false);
-            mreProcess2Action = new ManualResetEvent(true);
-#endregion
+            #region Process2Thread
+                        mreProcess2Ready = new ManualResetEvent(false);
+                        mreProcess2Run = new ManualResetEvent(false);
+                        mreProcess2Kill = new ManualResetEvent(false);
+                        mreProcess2Dead = new ManualResetEvent(false);
+                        mreProcess2Action = new ManualResetEvent(true);
+            #endregion
 
-#region CleanupThead
-            mreCleanupReady = new ManualResetEvent(false);
-            mreCleanupRun = new ManualResetEvent(false);
-            mreCleanupKill = new ManualResetEvent(false);
-            mreCleanupDead = new ManualResetEvent(false);
-            mreCleanupAction = new ManualResetEvent(false);
-#endregion
+            #region CleanupThead
+                        mreCleanupReady = new ManualResetEvent(false);
+                        mreCleanupRun = new ManualResetEvent(false);
+                        mreCleanupKill = new ManualResetEvent(false);
+                        mreCleanupDead = new ManualResetEvent(false);
+                        mreCleanupAction = new ManualResetEvent(false);
+            #endregion
 
         }   // public void Initialize
 
@@ -6014,7 +6283,7 @@ namespace nOCT
 
     public class nOCTcudaWrapper : IDisposable
     {
-        public const string gstrCUDAdll = "C:\\Users\\hylep\\Desktop\\nOCTcuda\\x64\\Release\\nOCTcuda.dll";
+        public const string gstrCUDAdll = "C:\\Users\\ONI Lab\\Desktop\\nOCTcuda\\x64\\Release\\nOCTcuda.dll";
 
         bool disposed = false;
         [SuppressUnmanagedCodeSecurityAttribute()]

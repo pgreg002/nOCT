@@ -91,6 +91,13 @@
                                 <ColumnDefinition Width="1*" />
                                 <ColumnDefinition Width="5" />
                             </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Grid.Row="3" Grid.Column="1">Channel</TextBlock>
+                            <ComboBox Grid.Row="3" Grid.Column="4" Name="cbULAlazarChannel" SelectedIndex="{Binding nULAlazarChannelIndex}" >
+                                <ComboBoxItem>OCT</ComboBoxItem>
+                                <ComboBoxItem>MZI</ComboBoxItem>
+                                <ComboBoxItem>Both</ComboBoxItem>
+                            </ComboBox>
                             <TextBlock Grid.Row="5" Grid.Column="1" >max</TextBlock>
                             <TextBox Grid.Row="5" Grid.Column="2" Name="txtULAlazarMax" Text="{Binding fULAlazarMax}" />
                             <TextBlock Grid.Row="6" Grid.Column="1" >min</TextBlock>
@@ -148,7 +155,7 @@
                         <TabItem.Header>
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="15" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="30" />
@@ -182,11 +189,13 @@
                                 <ColumnDefinition Width="5" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Row="4" Grid.Column="1">camera</TextBlock>
+                            
                             <ComboBox Grid.Row="4" Grid.Column="4" Grid.ColumnSpan="2" Name="cbULIMAQCamera" SelectedIndex="{Binding nULIMAQCameraIndex}" >
                                 <ComboBoxItem>parallel</ComboBoxItem>
                                 <ComboBoxItem>perpendicular</ComboBoxItem>
                                 <ComboBoxItem>both</ComboBoxItem>
                             </ComboBox>
+                            
                             <TextBlock Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" >min / max</TextBlock>
                             <TextBox Grid.Row="6" Grid.Column="4" Name="txtULIMAQMin" Text="{Binding fULIMAQMin}" />
                             <TextBox Grid.Row="6" Grid.Column="5" Name="txtULIMAQMax" Text="{Binding fULIMAQMax}" />
