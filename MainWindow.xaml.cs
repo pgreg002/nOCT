@@ -1,4 +1,4 @@
-﻿
+
 #region hardware settings
 
 //#define TRUEALAZAR
@@ -3036,7 +3036,7 @@ namespace nOCT
                 pcdFFT = NationalInstruments.Analysis.Dsp.Transforms.RealFft(pdLine);
                 #endregion forward fft
                 #region multiply mask and copy depth profile graph lines
-                for (nPoint=0; nPoint<nLineLength >> 1; nPoint++)
+                for (nPoint = 0; nPoint < (nLineLength >> 1); nPoint++)
                 {
                     pfDepthProfile[(2 * nLine + 0) * (nLineLength >> 1) + nPoint] = (float) (20.0*Math.Log10(pcdFFT[nPoint].Magnitude));
                     pcdFFT[nPoint].Real = pcdFFT[nPoint].Real * pfMask[nPoint];
@@ -3087,8 +3087,8 @@ namespace nOCT
                     pdLine[nPoint] -= dTemp;
                 #endregion bring midpoint down near 0 phase
                 #region clip end points
-                dLeftSum += pdLine[nLeft];
-                dRightSum += pdLine[nRight];
+                dLeftSum += pdLine[nLeft];   //sum phase values at nLeft across aLines
+                dRightSum += pdLine[nRight]; // dictus nisi nRight
                 #endregion clip end points
                 #region copy to phase plot lines
                 for (nPoint=0; nPoint < nLineLength; nPoint++)
@@ -3097,7 +3097,7 @@ namespace nOCT
             }   // for (nLine
 
             #region calculate overall slope and offset
-            dLeftSum /= nNumberLines;
+            dLeftSum /= nNumberLines; //compute average left end-point phase across aLines
             dRightSum /= nNumberLines;
             dSlope = (dRightSum - dLeftSum) / (nRight - nLeft);
             dOffset = dLeftSum - dSlope * nLeft;
@@ -3797,19 +3797,25 @@ namespace nOCT
 
             #endregion OCT data structures
 
-            #region nOCTcuda initialization
+            #region nOCTcuda function declarations
 
             internal static class UnsafeNativeMethods
             {
-            [DllImport("nOCTcuda.dll")]
+                [DllImport("nOCTcuda.dll")]
+                public static extern "C" int getDeviceCount();
+
+                [DllImport("nOCTcuda.dll")]
                 public static extern "C" void initialize();
+
+                [DllImport("nOCTcuda.dll")]
                 public static extern "C" void copyFromHostToDevice_nOCTcuda();
+                
+                [DllImport("nOCTcuda.dll")]
                 public static extern "C" void calculateReferenceArrays_nOCTcuda();
             }
 
             UnsafeNativeMethods.initialize();
-
-            #endregion //nOCT initialization
+            #endregion //nOCTcuda function declarations
             
             #endregion variables for main loop
 
@@ -3979,7 +3985,6 @@ namespace nOCT
                             case 2: // line field
                                 break;
                             case 3: // OFDI
-                                UnsafeNativeMethods.calculateReferenceArrays_nOCTcuda();
                                 break;
                             case 4: // PS OFDI
                                 break;
