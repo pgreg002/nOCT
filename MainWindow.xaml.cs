@@ -1,4 +1,4 @@
-
+﻿
 #region hardware settings
 
 //#define TRUEALAZAR
@@ -95,22 +95,22 @@ namespace nOCT
 
         #region define semi-globals
 
-            private CUIData UIData;
-            LinkedList<CDataNode> nodeList = new LinkedList<CDataNode>();
-            private CThreadData threadData = new CThreadData();
-            DispatcherTimer timerUIUpdate = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        private CUIData UIData;
+        LinkedList<CDataNode> nodeList = new LinkedList<CDataNode>();
+        private CThreadData threadData = new CThreadData();
+        DispatcherTimer timerUIUpdate = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
 
-            #if TRUECUDA
-            nOCTcudaWrapper cudaWrapper;
-            #endif  // TRUECUDA
+        #if TRUECUDA
+        nOCTcudaWrapper cudaWrapper;
+        #endif  // TRUECUDA
 
-            #if TRUEIPP
-            nOCTippWrapper ippWrapper;
-            #endif  // TRUEIPP
+        #if TRUEIPP
+        nOCTippWrapper ippWrapper;
+        #endif  // TRUEIPP
 
-            #if TRUEIMAQ
-            nOCTimaqWrapper imaqWrapper;
-            #endif  // TRUEIMAQ
+        #if TRUEIMAQ
+        nOCTimaqWrapper imaqWrapper;
+        #endif  // TRUEIMAQ
 
         #endregion  // define semi-globals
 
@@ -2402,7 +2402,7 @@ namespace nOCT
                                 FileStream fs = File.Open(nodeSave.Value.strFilename, FileMode.Create);
                                 BinaryWriter binWriter = new BinaryWriter(fs);
                                 strTest = nodeSave.Value.strFilename;   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
-                                
+
 
                                 switch (UIData.nLLSystemType)
                                 {
@@ -2724,6 +2724,7 @@ namespace nOCT
                             threadData.rwlsProcessTo1.ExitWriteLock();
                             threadData.mreProcess1Action.Set();
 
+
                             #region copy from process1 buffers to spectrum plots
 
                             if (threadData.rwlsProcessTo1.TryEnterReadLock(threadData.nProcess1WriteTimeout) == true)
@@ -3036,7 +3037,7 @@ namespace nOCT
                 pcdFFT = NationalInstruments.Analysis.Dsp.Transforms.RealFft(pdLine);
                 #endregion forward fft
                 #region multiply mask and copy depth profile graph lines
-                for (nPoint = 0; nPoint < (nLineLength >> 1); nPoint++)
+                for (nPoint=0; nPoint<nLineLength >> 1; nPoint++)
                 {
                     pfDepthProfile[(2 * nLine + 0) * (nLineLength >> 1) + nPoint] = (float) (20.0*Math.Log10(pcdFFT[nPoint].Magnitude));
                     pcdFFT[nPoint].Real = pcdFFT[nPoint].Real * pfMask[nPoint];
@@ -3087,8 +3088,8 @@ namespace nOCT
                     pdLine[nPoint] -= dTemp;
                 #endregion bring midpoint down near 0 phase
                 #region clip end points
-                dLeftSum += pdLine[nLeft];   //sum phase values at nLeft across aLines
-                dRightSum += pdLine[nRight]; // dictus nisi nRight
+                dLeftSum += pdLine[nLeft];
+                dRightSum += pdLine[nRight];
                 #endregion clip end points
                 #region copy to phase plot lines
                 for (nPoint=0; nPoint < nLineLength; nPoint++)
@@ -3097,7 +3098,7 @@ namespace nOCT
             }   // for (nLine
 
             #region calculate overall slope and offset
-            dLeftSum /= nNumberLines; //compute average left end-point phase across aLines
+            dLeftSum /= nNumberLines;
             dRightSum /= nNumberLines;
             dSlope = (dRightSum - dLeftSum) / (nRight - nLeft);
             dOffset = dLeftSum - dSlope * nLeft;
@@ -3635,7 +3636,6 @@ namespace nOCT
 
         void Process1Thread()
         {
-
             #region initializing
 
             threadData.strProcess1ThreadStatus = "Initializing...";
@@ -3797,34 +3797,14 @@ namespace nOCT
 
             #endregion OCT data structures
 
-            #region nOCTcuda function declarations
-
-            internal static class UnsafeNativeMethods
-            {
-                [DllImport("nOCTcuda.dll")]
-                public static extern "C" int getDeviceCount();
-
-                [DllImport("nOCTcuda.dll")]
-                public static extern "C" void initialize();
-
-                [DllImport("nOCTcuda.dll")]
-                public static extern "C" void copyFromHostToDevice_nOCTcuda();
-                
-                [DllImport("nOCTcuda.dll")]
-                public static extern "C" void calculateReferenceArrays_nOCTcuda();
-            }
-
-            UnsafeNativeMethods.initialize();
-            #endregion //nOCTcuda function declarations
-            
             #endregion variables for main loop
 
             // initialization complete
-            
             threadData.mreProcess1Ready.Set();
             threadData.strProcess1ThreadStatus = "Ready!";
 
             #endregion  // initializing
+
 
             #region main loop
 
@@ -3845,6 +3825,18 @@ namespace nOCT
                         threadData.nProcess2Type = UIData.nURDisplayIndex;
 
                         #region read from process1 buffers, calculate and subtract reference
+
+                        #region validate AlazarAcquireThread
+                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\Process1Thread save.bin";
+                        FileStream fs = File.Open(strFilename, FileMode.Create);
+                        BinaryWriter binWriter = new BinaryWriter(fs);
+
+                        fs.Seek(0, SeekOrigin.Begin);
+                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                            binWriter.Write(threadData.pnProcess1Alazar[mPoint]);
+
+                        fs.Close();
+                        #endregion validate AlazarAcquireThread
 
                         #region calculate reference arrays
 
