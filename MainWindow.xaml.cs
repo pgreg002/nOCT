@@ -3826,17 +3826,51 @@ namespace nOCT
 
                         #region read from process1 buffers, calculate and subtract reference
 
-                        #region validate AlazarAcquireThread
-                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\Process1Thread save.bin";
+                        #region validate Process1Thread
+                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\control.bin";
                         FileStream fs = File.Open(strFilename, FileMode.Create);
                         BinaryWriter binWriter = new BinaryWriter(fs);
 
                         fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                        for (int mPoint = 0; mPoint < 2 * UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
                             binWriter.Write(threadData.pnProcess1Alazar[mPoint]);
 
                         fs.Close();
-                        #endregion validate AlazarAcquireThread
+                        #endregion validate Process1Thread
+
+                        #region separate interleaved Alazar acquisitions 
+                        if (UIData.nLLSystemType == 3)
+                        {
+                            int destinationIndex = 0;
+                            for(int sourceIndex = 0; sourceIndex < 2 * UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; sourceIndex++)
+                            {
+                                if (sourceIndex % 2 == 0) threadData.pfProcess1AlazarOCT[destinationIndex] = threadData.pfProcess1Alazar[sourceIndex];
+                                if (sourceIndex % 2 == 1)
+                                {
+                                    threadData.pfProcess1AlazarMZI[destinationIndex] = threadData.pfProcess1Alazar[sourceIndex];
+                                    destinationIndex++;
+                                }
+                            }
+                        }
+                        #endregion separate interleaved Alazar acquisitions
+
+                        #region validate Process1Thread
+                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testOCT.bin";
+                        fs = File.Open(strFilename, FileMode.Create);
+                        binWriter = new BinaryWriter(fs);
+                        fs.Seek(0, SeekOrigin.Begin);
+                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                            binWriter.Write(threadData.pnProcess1AlazarOCT[mPoint]);
+                        fs.Close();
+
+                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testMZI.bin";
+                        fs = File.Open(strFilename, FileMode.Create);
+                        binWriter = new BinaryWriter(fs);
+                        fs.Seek(0, SeekOrigin.Begin);
+                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                            binWriter.Write(threadData.pnProcess1AlazarMZI[mPoint]);
+                        fs.Close();
+                        #endregion validate Process1Thread
 
                         #region calculate reference arrays
 
@@ -3977,8 +4011,40 @@ namespace nOCT
                             case 2: // line field
                                 break;
                             case 3: // OFDI
-                                break;
-                            case 4: // PS OFDI
+                                switch (UIData.nLRReferenceMethod)
+                                {
+                                    case 0:  // none
+                                        Array.Clear(pfReference, 0, pfReference.Length);
+                                        break;
+                                    case 1:  // use average
+                                        #region calculate parallel even
+                                        Array.Clear(pfSum, 0, pfSum.Length);
+                                        for (nAline = 0; nAline < nNumberLines; nAline++)
+                                        {
+                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
+                                        }   // for (nAline
+                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
+                                        #endregion calculate parallel even
+                                        break;
+                                    case 2:  // record
+                                        #region calculate parallel even
+                                        Array.Clear(pfSum, 0, pfSum.Length);
+                                        for (nAline = 0; nAline < nNumberLines; nAline++)
+                                        {
+                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
+                                        }   // for (nAline
+                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
+                                        #endregion calculate parallel even
+                                        Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
+                                        break;
+                                    case 3:  // use recorded
+                                        Buffer.BlockCopy(pfReferenceRecorded, 0, pfReference, 0, pfReference.Length * sizeof(float));
+                                        break;
+                                }   // switch (UIData.nLRCalibrationReferenceMethod                            case 4: // PS OFDI
                                 break;
                         }   // switch (UIData.nLLSystemType
 
@@ -6108,11 +6174,11 @@ namespace nOCT
         public int nProcess1WriteTimeout;
         public int nProcess1ProcessingType;
         public UInt16[] pnProcess1Alazar;
-        public UInt16[] pnProcess1AlazarMZI;
         public UInt16[] pnProcess1AlazarOCT;
+        public UInt16[] pnProcess1AlazarMZI;
         public float[] pfProcess1Alazar;
-        public float[] pfProcess1AlazarMZI;
         public float[] pfProcess1AlazarOCT;
+        public float[] pfProcess1AlazarMZI;
         public float[] pfProcess1DAQ;
         public float[] pfProcess1IMAQParallel;
         public float[] pfProcess1IMAQPerpendicular;
