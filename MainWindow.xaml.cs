@@ -754,12 +754,12 @@ namespace nOCT
                 case 3: // OFDI
                     threadData.nRawNumberAlines = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;  // will be two channels, each with this number of lines
                     threadData.nRawAlineLength = UIData.nLLAlazarLineLength;
-                    threadData.pnProcess1Alazar = new UInt16[2 * threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pnProcess1AlazarMZI = new UInt16[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pnProcess1AlazarOCT = new UInt16[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess1Alazar = new float[2 * threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess1AlazarMZI = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess1AlazarOCT = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
+                    threadData.pnProcess1Alazar     = new UInt16[threadData.nRawNumberAlines * UIData.nLLAlazarLineLength];  // threadData.nRawAlineLength];
+                    threadData.pnProcess1AlazarMZI  = new UInt16[threadData.nRawNumberAlines * UIData.nLLAlazarLineLength / 2];   //threadData.nRawAlineLength];
+                    threadData.pnProcess1AlazarOCT  = new UInt16[threadData.nRawNumberAlines * UIData.nLLAlazarLineLength / 2];   //threadData.nRawAlineLength];
+                    threadData.pfProcess1Alazar     = new float[threadData.nRawNumberAlines  * UIData.nLLAlazarLineLength];   //threadData.nRawAlineLength];
+                    threadData.pfProcess1AlazarMZI  = new float[threadData.nRawNumberAlines  * UIData.nLLAlazarLineLength / 2];    //threadData.nRawAlineLength];
+                    threadData.pfProcess1AlazarOCT  = new float[threadData.nRawNumberAlines  * UIData.nLLAlazarLineLength / 2];    //threadData.nRawAlineLength];
                     threadData.pfProcess1DAQ = new float[4 * threadData.nRawNumberAlines];
                     threadData.pnProcess2AAlazar = new UInt16[2 * threadData.nRawNumberAlines * threadData.nRawAlineLength];
                     threadData.pfProcess2ADAQ = new float[4 * threadData.nRawNumberAlines];
@@ -1731,12 +1731,12 @@ namespace nOCT
 
             #region alazar calculate record, buffer, acquisition size
             UInt32 preTriggerSamples        = 0;
-            UInt32 postTriggerSamples       = 8192;
-            UInt32 recordsPerBuffer         = (UInt32)UIData.nLLLinesPerChunk; // 100;
-            UInt32 buffersPerAcquisition    = (UInt32)UIData.nLLChunksPerImage + 1;  // 10
-            UInt32 recordsPerAcquisition    = recordsPerBuffer * buffersPerAcquisition;
+            UInt32 postTriggerSamples       = (UInt32)UIData.nLLAlazarLineLength - preTriggerSamples; //8192-preTS
+            UInt32 recordsPerBuffer         = (UInt32)UIData.nLLLinesPerChunk; // 100; //256 LinesPerChunk
+            UInt32 buffersPerAcquisition    = (UInt32)UIData.nLLChunksPerImage*2;  // 10  // 8 chunksPerImage 
+            UInt32 recordsPerAcquisition    = recordsPerBuffer * buffersPerAcquisition; //256*8=2048 LinesPerAcquisition --> 2048*8192=16,777,216
             UInt32 channelCount             = 2;
-
+           
             // Get the sample size in bits, and the on-board memory size in samples per channel
             Byte bitsPerSample;
             UInt32 maxSamplesPerChannel;
@@ -1752,9 +1752,9 @@ namespace nOCT
 
             // Calculate the size of each DMA buffer in bytes
             UInt32 bytesPerSample = 2; //((UInt32)bitsPerSample + 7) / 8;
-            UInt32 samplesPerRecord = preTriggerSamples + postTriggerSamples;
-            UInt32 bytesPerRecord = (bytesPerSample * samplesPerRecord);
-            UInt32 bytesPerBuffer = bytesPerRecord * recordsPerBuffer * channelCount;
+            UInt32 samplesPerRecord = preTriggerSamples + postTriggerSamples; //8192
+            UInt32 bytesPerRecord = (bytesPerSample * samplesPerRecord); // 2*8192=16,384
+            UInt32 bytesPerBuffer = bytesPerRecord * recordsPerBuffer * channelCount; //2*8192 * 256 * 2 == 8192*256*4 == 8192*1024 == 8192kb 
             #endregion
 
             // set up wait handles to start
@@ -1806,9 +1806,10 @@ namespace nOCT
                         -(int)preTriggerSamples,
                         samplesPerRecord,
                         recordsPerBuffer,
-                        2*recordsPerAcquisition,
+                        2 * recordsPerAcquisition,
                         AlazarAPI.ADMA_EXTERNAL_STARTCAPTURE | AlazarAPI.ADMA_NPT | AlazarAPI.ADMA_FIFO_ONLY_STREAMING | AlazarAPI.ADMA_ALLOC_BUFFERS
                         );
+                    
                     if (retCode != AlazarAPI.ApiSuccess)
                     {
                         string message = "Error: AlazarBeforeAsyncRead failed-- " + AlazarAPI.AlazarErrorToText(retCode);
@@ -1860,8 +1861,8 @@ namespace nOCT
                             {
                                 threadData.strAcquireAlazarThreadStatus = "Wa";
                                 for(int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
-                                { 
-                                    fixed(void* vPtr = threadData.nodeAcquire.Value.pnAlazar[nChunk])
+                                {
+                                        fixed (void* vPtr = threadData.nodeAcquire.Value.pnAlazar[nChunk])
                                     {
                                         retCode = AlazarAPI.AlazarWaitNextAsyncBufferComplete(
                                             boardHandle,
@@ -2698,7 +2699,7 @@ namespace nOCT
                                         for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
                                         {
                                             //Array.Copy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pfProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, UIData.nLLLinesPerChunk * threadData.nRawAlineLength);
-                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength * 2, nodeProcess.Value.pnAlazar[nChunk].Length * 2);
+                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength, nodeProcess.Value.pnAlazar[nChunk].Length);
                                         }   // for (int nChunk
                                         #endregion
                                     }   // if (UIData.nLLChunksPerImage
@@ -2733,33 +2734,49 @@ namespace nOCT
                                 {
                                     case 0: // Alazar      
                                         #region main
+                                        #region bitshift Alazar data down
                                         for (int n = 0; n < threadData.pnProcess1Alazar.Length; n++)
                                             threadData.pnProcess1Alazar[n] = (ushort)(threadData.pnProcess1Alazar[n] >> 4);
+                                        #endregion
+                                        /*
                                         for (int nSample = 0; nSample < threadData.pnProcess1Alazar.Length-2; nSample +=2)
                                         {
                                             threadData.pnProcess1AlazarOCT[nSample/2] = threadData.pnProcess1Alazar[nSample];
                                             threadData.pnProcess1AlazarMZI[nSample/2 + 1] = threadData.pnProcess1Alazar[nSample + 1];
                                         }
-                                        
+                                        */
+                                        #region separate interleaved Alazar acquisitions 
+                                        int destinationIndex = 0;
+                                        for (int sourceIndex = 0; sourceIndex < threadData.pnProcess1Alazar.Length; sourceIndex++)
+                                        {
+                                            if (sourceIndex % 2 == 0) threadData.pnProcess1AlazarOCT[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
+                                            if (sourceIndex % 2 == 1)
+                                            {
+                                                threadData.pnProcess1AlazarMZI[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
+                                                destinationIndex++;
+                                            }
+                                        }
+                                        #endregion separate interleaved Alazar acquisitions
+
                                         switch (UIData.nULAlazarChannelIndex)
                                         {
                                             case 0: // OCT
                                                 Array.Copy(threadData.pnProcess1AlazarOCT, threadData.pfProcess1AlazarOCT, threadData.pnProcess1AlazarOCT.Length);
-                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage; nLine++)
+                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage / 2; nLine++)
                                                 {
-                                                    for (int mPoint = 0; mPoint < threadData.nRawAlineLength; mPoint++)
+                                                    for (int mPoint = 0; mPoint < UIData.nLLAlazarLineLength; mPoint++)
                                                     {
-                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarOCT[nLine * threadData.nRawAlineLength + mPoint];
+                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarOCT[nLine * UIData.nLLAlazarLineLength + mPoint];
                                                     }
                                                 }
                                                 break;
                                             case 1: // MZI
                                                 Array.Copy(threadData.pnProcess1AlazarMZI, threadData.pfProcess1AlazarMZI, threadData.pnProcess1AlazarMZI.Length);
-                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage; nLine++)
+                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage / 2; nLine++)
                                                 {
-                                                    for (int mPoint = 0; mPoint < threadData.nRawAlineLength; mPoint++)
+                                                    for (int mPoint = 0; mPoint < UIData.nLLAlazarLineLength; mPoint++)
                                                     {
-                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarMZI[nLine * threadData.nRawAlineLength + mPoint];
+                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarMZI[nLine * UIData.nLLAlazarLineLength + mPoint];
                                                     }
                                                 }
                                                 break;
@@ -2767,9 +2784,9 @@ namespace nOCT
                                                 Array.Copy(threadData.pnProcess1Alazar, threadData.pfProcess1Alazar, threadData.pnProcess1Alazar.Length);
                                                 for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage; nLine++)
                                                 {
-                                                    for (int mPoint = 0; mPoint < threadData.nRawAlineLength; mPoint++)
+                                                    for (int mPoint = 0; mPoint < UIData.nLLAlazarLineLength; mPoint++)
                                                     {
-                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1Alazar[nLine * threadData.nRawAlineLength + mPoint];
+                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1Alazar[nLine * UIData.nLLAlazarLineLength + mPoint];
                                                     }
                                                 }
                                                 break;
@@ -3832,7 +3849,7 @@ namespace nOCT
                         BinaryWriter binWriter = new BinaryWriter(fs);
 
                         fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < 2 * UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                        for (int mPoint = 0; mPoint < threadData.pnProcess1Alazar.Length; mPoint++)
                             binWriter.Write(threadData.pnProcess1Alazar[mPoint]);
 
                         fs.Close();
@@ -3842,12 +3859,12 @@ namespace nOCT
                         if (UIData.nLLSystemType == 3)
                         {
                             int destinationIndex = 0;
-                            for(int sourceIndex = 0; sourceIndex < 2 * UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; sourceIndex++)
+                            for(int sourceIndex = 0; sourceIndex < threadData.pnProcess1Alazar.Length; sourceIndex++)
                             {
-                                if (sourceIndex % 2 == 0) threadData.pfProcess1AlazarOCT[destinationIndex] = threadData.pfProcess1Alazar[sourceIndex];
+                                if (sourceIndex % 2 == 0) threadData.pnProcess1AlazarOCT[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
                                 if (sourceIndex % 2 == 1)
                                 {
-                                    threadData.pfProcess1AlazarMZI[destinationIndex] = threadData.pfProcess1Alazar[sourceIndex];
+                                    threadData.pnProcess1AlazarMZI[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
                                     destinationIndex++;
                                 }
                             }
@@ -3859,7 +3876,7 @@ namespace nOCT
                         fs = File.Open(strFilename, FileMode.Create);
                         binWriter = new BinaryWriter(fs);
                         fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarOCT.Length; mPoint++)
                             binWriter.Write(threadData.pnProcess1AlazarOCT[mPoint]);
                         fs.Close();
 
@@ -3867,7 +3884,7 @@ namespace nOCT
                         fs = File.Open(strFilename, FileMode.Create);
                         binWriter = new BinaryWriter(fs);
                         fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarMZI.Length; mPoint++)
                             binWriter.Write(threadData.pnProcess1AlazarMZI[mPoint]);
                         fs.Close();
                         #endregion validate Process1Thread
@@ -3882,7 +3899,7 @@ namespace nOCT
                         fs = File.Open(strFilename, FileMode.Create);
                         binWriter = new BinaryWriter(fs);
                         fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarOCT.Length; mPoint++)
                             binWriter.Write(threadData.pfProcess1AlazarOCT[mPoint]);
                         fs.Close();
 
@@ -3890,7 +3907,7 @@ namespace nOCT
                         fs = File.Open(strFilename, FileMode.Create);
                         binWriter = new BinaryWriter(fs);
                         fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarMZI.Length; mPoint++)
                             binWriter.Write(threadData.pfProcess1AlazarMZI[mPoint]);
                         fs.Close();
                         #endregion validate Process1Thread
