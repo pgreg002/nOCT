@@ -3872,6 +3872,29 @@ namespace nOCT
                         fs.Close();
                         #endregion validate Process1Thread
 
+                        #region convert UInt16 arrays to float arrays
+                        Array.Copy(threadData.pnProcess1AlazarOCT, threadData.pfProcess1AlazarOCT, threadData.pnProcess1AlazarOCT.Length);
+                        Array.Copy(threadData.pnProcess1AlazarMZI, threadData.pfProcess1AlazarMZI, threadData.pnProcess1AlazarMZI.Length);
+                        #endregion convert UInt16 arrays to float arrays
+
+                        #region validate Process1Thread
+                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testOCTfloat.bin";
+                        fs = File.Open(strFilename, FileMode.Create);
+                        binWriter = new BinaryWriter(fs);
+                        fs.Seek(0, SeekOrigin.Begin);
+                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                            binWriter.Write(threadData.pfProcess1AlazarOCT[mPoint]);
+                        fs.Close();
+
+                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testMZIfloat.bin";
+                        fs = File.Open(strFilename, FileMode.Create);
+                        binWriter = new BinaryWriter(fs);
+                        fs.Seek(0, SeekOrigin.Begin);
+                        for (int mPoint = 0; mPoint < UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength; mPoint++)
+                            binWriter.Write(threadData.pfProcess1AlazarMZI[mPoint]);
+                        fs.Close();
+                        #endregion validate Process1Thread
+
                         #region calculate reference arrays
 
                         switch (UIData.nLLSystemType)
@@ -4017,7 +4040,7 @@ namespace nOCT
                                         Array.Clear(pfReference, 0, pfReference.Length);
                                         break;
                                     case 1:  // use average
-                                        #region calculate parallel even
+                                        #region use average
                                         Array.Clear(pfSum, 0, pfSum.Length);
                                         for (nAline = 0; nAline < nNumberLines; nAline++)
                                         {
@@ -4026,7 +4049,7 @@ namespace nOCT
                                         }   // for (nAline
                                         for (nPoint = 0; nPoint < nLineLength; nPoint++)
                                             pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
-                                        #endregion calculate parallel even
+                                        #endregion use average
                                         break;
                                     case 2:  // record
                                         #region calculate parallel even
