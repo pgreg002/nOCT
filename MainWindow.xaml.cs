@@ -1591,6 +1591,336 @@ namespace nOCT
 
         }  // void AcquireThread
 
+
+        static public bool ConfigureAlazarBoard(IntPtr boardHandle)
+        {
+            UInt32 retCode;
+
+            double samplesPerSec = 1000000000.0;
+            UInt32 sampleRateId = AlazarAPI.SAMPLE_RATE_1000MSPS;
+
+            retCode =
+                AlazarAPI.AlazarSetCaptureClock(
+                    boardHandle,
+                    AlazarAPI.INTERNAL_CLOCK,
+                    sampleRateId,
+                    AlazarAPI.CLOCK_EDGE_RISING,
+                    0
+                    );
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+
+            retCode = AlazarAPI.AlazarInputControlEx(boardHandle,
+                                           AlazarAPI.CHANNEL_A,
+                                           AlazarAPI.DC_COUPLING,
+                                           AlazarAPI.INPUT_RANGE_PM_400_MV,
+                                           AlazarAPI.IMPEDANCE_50_OHM);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+
+            retCode = AlazarAPI.AlazarInputControlEx(boardHandle,
+                                           AlazarAPI.CHANNEL_B,
+                                           AlazarAPI.DC_COUPLING,
+                                           AlazarAPI.INPUT_RANGE_PM_400_MV,
+                                           AlazarAPI.IMPEDANCE_50_OHM);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+
+            retCode =
+                AlazarAPI.AlazarSetTriggerOperation(
+                    boardHandle,
+                    AlazarAPI.TRIG_ENGINE_OP_J,
+                    AlazarAPI.TRIG_ENGINE_J,
+                    AlazarAPI.TRIG_EXTERNAL,
+                    AlazarAPI.TRIGGER_SLOPE_POSITIVE,
+                    150,
+                    AlazarAPI.TRIG_ENGINE_K,
+                    AlazarAPI.TRIG_DISABLE,
+                    AlazarAPI.TRIGGER_SLOPE_POSITIVE,
+                    128);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+
+            retCode =
+                AlazarAPI.AlazarSetExternalTrigger(
+                    boardHandle,
+                    AlazarAPI.DC_COUPLING,
+                    AlazarAPI.ETR_2V5);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+
+            double triggerDelay_sec = 0;
+            UInt32 triggerDelay_samples = (UInt32)(triggerDelay_sec * samplesPerSec + 0.5);
+            retCode =
+                AlazarAPI.AlazarSetTriggerDelay(
+                    boardHandle,
+                    triggerDelay_samples
+                    );
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+
+            double triggerTimeout_sec = 0;
+            UInt32 triggerTimeout_clocks = (UInt32)(triggerTimeout_sec / 10E-6 + 0.5);
+
+            retCode =
+                AlazarAPI.AlazarSetTriggerTimeOut(
+                    boardHandle,
+                    triggerTimeout_clocks
+                    );
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+
+            retCode =
+                AlazarAPI.AlazarConfigureAuxIO(
+                   boardHandle, AlazarAPI.AUX_OUT_TRIGGER, 0);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        struct ByteToShortArray
+        {
+            // Use this structure to access a byte array as a short array,
+            // without making an intermediate copy in memory.
+            [FieldOffset(0)]
+            public byte[] bytes;
+
+            [FieldOffset(0)]
+            public short[] shorts;
+        }
+
+        public unsafe bool AcquireAlazarData(IntPtr boardHandle)
+        {
+            UInt32 preTriggerSamples = 1050;
+            UInt32 postTriggerSamples = 8192 - preTriggerSamples;
+
+            UInt32 recordsPerBuffer = 256;
+            UInt32 buffersPerAcquisition = 8;
+
+            UInt32 channelMask = AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B;
+
+            // Calculate the number of enabled channels from the channel mask
+            UInt32 channelCount = 0;
+            switch (channelMask)
+            {
+                case AlazarAPI.CHANNEL_A:
+                case AlazarAPI.CHANNEL_B:
+                    channelCount = 1;
+                    break;
+                case AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B:
+                    channelCount = 2;
+                    break;
+                default:
+                    return false;
+            }
+
+            // Get the sample size in bits, and the on-board memory size in samples per channel
+            Byte bitsPerSample;
+            UInt32 maxSamplesPerChannel;
+            UInt32 retCode = AlazarAPI.AlazarGetChannelInfo(boardHandle, &maxSamplesPerChannel, &bitsPerSample);
+            if (retCode != AlazarAPI.ApiSuccess)
+            {
+                return false;
+            }
+
+            // Calculate the size of each DMA buffer in bytes
+
+            UInt32 bytesPerSample = ((UInt32)bitsPerSample + 7) / 8;
+            UInt32 samplesPerRecord = preTriggerSamples + postTriggerSamples;
+            UInt32 bytesPerRecord = (bytesPerSample * samplesPerRecord);
+            UInt32 bytesPerBuffer = bytesPerRecord * recordsPerBuffer * channelCount;
+
+            bool success = true;
+
+            ushort[] output = new ushort[bytesPerBuffer * buffersPerAcquisition / 4];
+
+            try
+            {
+                // Allocate memory for sample buffer
+                byte[] buffer = new byte[bytesPerBuffer];
+
+                //// Cast byte array to short array
+                ByteToShortArray byteToShortArray = new ByteToShortArray();
+                byteToShortArray.bytes = buffer;
+
+                fixed (short* pBuffer = byteToShortArray.shorts)
+                {
+
+                    // Configure the record size
+
+                    retCode =
+                        AlazarAPI.AlazarSetRecordSize(
+                            boardHandle,
+                            preTriggerSamples,
+                            postTriggerSamples
+                            );
+                    if (retCode != AlazarAPI.ApiSuccess)
+                    {
+                        throw new System.Exception("Error: AlazarSetRecordSize failed -- " + AlazarAPI.AlazarErrorToText(retCode));
+                    }
+
+                    // Configure the board to make an NPT AutoDMA acquisition
+
+                    UInt32 recordsPerAcquisition = recordsPerBuffer * buffersPerAcquisition;
+
+                    retCode =
+                        AlazarAPI.AlazarBeforeAsyncRead(
+                            boardHandle,
+                            channelMask,
+                            -(int)preTriggerSamples,
+                            samplesPerRecord,
+                            recordsPerBuffer,
+                            recordsPerAcquisition,
+                            AlazarAPI.ADMA_EXTERNAL_STARTCAPTURE | AlazarAPI.ADMA_NPT | AlazarAPI.ADMA_FIFO_ONLY_STREAMING | AlazarAPI.ADMA_ALLOC_BUFFERS
+                            );
+                    if (retCode != AlazarAPI.ApiSuccess)
+                    {
+                        throw new System.Exception("Error: AlazarBeforeAsyncRead failed -- " + AlazarAPI.AlazarErrorToText(retCode));
+                    }
+
+                    // Arm the board to begin the acquisition
+
+                    retCode = AlazarAPI.AlazarStartCapture(boardHandle);
+                    if (retCode != AlazarAPI.ApiSuccess)
+                    {
+                        throw new System.Exception("Error: AlazarStartCapture failed -- " +
+                            AlazarAPI.AlazarErrorToText(retCode));
+                    }
+
+                    // Wait for each buffer to be filled, then process the buffer
+
+                    int startTickCount = System.Environment.TickCount;
+
+                    UInt32 buffersCompleted = 0;
+                    Int64 bytesTransferred = 0;
+                    
+                    int bufferCount = 0;
+                    bool done = false;
+                    while (!done)
+                    {
+                        // TODO: Set a buffer timeout that is longer than the time
+                        //       required to capture all the records in one buffer.
+
+                        UInt32 timeout_ms = 5000;
+
+                        // Wait for a buffer to be filled by the board.
+
+                        retCode = AlazarAPI.AlazarWaitNextAsyncBufferComplete(boardHandle, pBuffer, bytesPerBuffer, timeout_ms);
+                        if (retCode == AlazarAPI.ApiSuccess)
+                        {
+                            // This buffer is full, but there are more buffers in the acquisition.
+                        }
+                        else if (retCode == AlazarAPI.ApiTransferComplete)
+                        {
+                            // This buffer is full, and it's the last buffer of the acqusition.
+                            done = true;
+                        }
+                        else
+                        {
+                            throw new System.Exception("Error: AlazarWaitNextAsyncBufferComplete failed -- " +
+                                AlazarAPI.AlazarErrorToText(retCode));
+                        }
+
+                        buffersCompleted++;
+                        bytesTransferred += bytesPerBuffer;
+
+                        // Copy buffer-acquisition to linked list node
+                        //Array.Copy(buffer, threadData.nodeAcquire.Value.pnAlazar[nChunk], buffer.Length);
+                        Buffer.BlockCopy(buffer, 0, output, bufferCount * (int)bytesPerBuffer, buffer.Length);
+                        bufferCount++;
+
+                        #region NOTE: acquisition characteristics
+                        // While you are processing this buffer, the board is already
+                        // filling the next available buffer(s).
+                        //
+                        // You MUST finish processing this buffer and post it back to the
+                        // board before the board fills all of the available DMA buffers,
+                        // and its on-board memory.
+                        //
+                        // Samples are arranged in the buffer as follows: S0A, S0B, ..., S1A, S1B, ...
+                        // with SXY the sample number X of channel Y.
+                        //
+                        // A 12-bit sample code is stored in the most significant bits
+                        // of
+                        // in each 16-bit sample value.
+                        //
+                        // Sample codes are unsigned by default. As a result:
+                        // - a sample code of 0x0000 represents a negative full scale
+                        // input signal.
+                        // - a sample code of 0x8000 represents a ~0V signal.
+                        // - a sample code of 0xFFFF represents a positive full scale
+                        // input signal.
+                        #endregion NOTE: acquisition characteristics
+
+                        if (buffersCompleted >= buffersPerAcquisition)
+                        {
+                            done = true;
+                        }
+
+                        // Display progress
+                        //Console.Write("Completed {0} buffers\r", buffersCompleted);
+                    }
+
+                    #region validate AcquireAlazarData
+                    string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\test.bin";
+                    FileStream fs = File.Open(strFilename, FileMode.Create);
+                    BinaryWriter binWriter = new BinaryWriter(fs);
+
+                    fs.Seek(0, SeekOrigin.Begin);
+                    for (int mPoint = 0; mPoint < output.Length; mPoint++)
+                        binWriter.Write(output[mPoint]);
+                    fs.Close();
+                    #endregion validate AcquireAlazarData
+
+                    // Display results
+                    double transferTime_sec = ((double)(System.Environment.TickCount - startTickCount)) / 1000;
+                    UInt32 recordsTransferred = recordsPerBuffer * buffersCompleted;
+                }
+            }
+            catch (Exception exception)
+            {
+                //Console.WriteLine(exception.ToString());
+                success = false;
+            }
+            finally
+            {
+                // Abort the acquisition
+                retCode = AlazarAPI.AlazarAbortAsyncRead(boardHandle);
+                if (retCode != AlazarAPI.ApiSuccess)
+                {
+                    ;
+                }
+            }
+
+            Console.ReadLine();
+            return success;
+        }
+
         unsafe void AcquireAlazarThread()
         {
             #region initializing
@@ -1601,161 +1931,26 @@ namespace nOCT
             int nMode = -1;
             UInt32 retCode;
 
-            // configure board
-            IntPtr boardHandle = IntPtr.Zero;
+            #region get Alazar board handle
             UInt32 systemId = 1;
             UInt32 boardId = 1;
-            boardHandle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId); // address board
-            if (boardHandle == IntPtr.Zero)
+            IntPtr handle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId);
+            if (handle == IntPtr.Zero)
             {
-                string message = "Error: AlazarGetBoardBySystemID failed-- boardHandle == IntPtr.Zero";
+                //Console.WriteLine("Error: Open board {0}:{1} failed.", systemId, boardId);
+                string message = "Error: AlazarGetBoardBySystemID failed--";
                 System.Windows.MessageBox.Show(message,
                     "Alazar error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
+                return;
             }
+            #endregion get Alazar board handle
 
-            #region alazar timing configuration
-            retCode = AlazarAPI.AlazarSetCaptureClock(boardHandle,
-                AlazarAPI.INTERNAL_CLOCK,
-                AlazarAPI.SAMPLE_RATE_1000MSPS,
-                AlazarAPI.CLOCK_EDGE_RISING,
-                0);
-                if (retCode != AlazarAPI.ApiSuccess)
-            {
-                string message = "Error: AlazarSetCaptureClock failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                System.Windows.MessageBox.Show(message,
-                    "Alazar error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
+            #region configure Alazar board
+            ConfigureAlazarBoard(handle);
+            #endregion configure Alazar board
 
-            retCode = AlazarAPI.AlazarInputControl(boardHandle,
-                AlazarAPI.CHANNEL_A,
-                AlazarAPI.DC_COUPLING,
-                AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
-                AlazarAPI.IMPEDANCE_50_OHM);
-                if (retCode != AlazarAPI.ApiSuccess)
-                {
-                    string message = "Error: AlazarInputControl CHANNEL_A failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                    System.Windows.MessageBox.Show(message,
-                        "Alazar error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-            retCode = AlazarAPI.AlazarSetBWLimit(boardHandle, AlazarAPI.CHANNEL_A, 0); // disable BW limit filter
-                if (retCode != AlazarAPI.ApiSuccess)
-                {
-                    string message = "Error: AlazarSetBWLimit CHANNEL_A failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                    System.Windows.MessageBox.Show(message,
-                        "Alazar error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-
-            retCode = AlazarAPI.AlazarInputControl(boardHandle,
-                AlazarAPI.CHANNEL_B,
-                AlazarAPI.DC_COUPLING,
-                AlazarAPI.INPUT_RANGE_PM_400_MV, //ATS-9371 has fixed +/-400mV input range
-                AlazarAPI.IMPEDANCE_50_OHM);
-                if (retCode != AlazarAPI.ApiSuccess)
-                {
-                    string message = "Error: AlazarInputControl CHANNEL_B failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                    System.Windows.MessageBox.Show(message,
-                        "Alazar error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-            retCode = AlazarAPI.AlazarSetBWLimit(boardHandle, AlazarAPI.CHANNEL_B, 0); // disable BW limit filter
-                if (retCode != AlazarAPI.ApiSuccess)
-                {
-                    string message = "Error: AlazarSetBWLimit CHANNEL_B failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                    System.Windows.MessageBox.Show(message,
-                        "Alazar error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-
-            retCode = AlazarAPI.AlazarSetTriggerOperation(
-                boardHandle,
-                AlazarAPI.TRIG_ENGINE_OP_J,
-                AlazarAPI.TRIG_ENGINE_J,
-                AlazarAPI.TRIG_EXTERNAL,
-                AlazarAPI.TRIGGER_SLOPE_POSITIVE,
-                150,
-                AlazarAPI.TRIG_ENGINE_K,
-                AlazarAPI.TRIG_DISABLE,
-                AlazarAPI.TRIGGER_SLOPE_POSITIVE,
-                128);
-                if (retCode != AlazarAPI.ApiSuccess)
-                {
-                    string message = "Error: AlazarSetTriggerOperation failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                    System.Windows.MessageBox.Show(message,
-                        "Alazar error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-            retCode = AlazarAPI.AlazarSetExternalTrigger(
-                boardHandle,
-                AlazarAPI.DC_COUPLING,
-                AlazarAPI.ETR_2V5);
-                if (retCode != AlazarAPI.ApiSuccess)
-            {
-                string message = "Error: AlazarSetExternalTrigger failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                System.Windows.MessageBox.Show(message,
-                    "Alazar error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
-
-            retCode = AlazarAPI.AlazarSetTriggerTimeOut(boardHandle, 10000);
-                if (retCode!= AlazarAPI.ApiSuccess)
-                {
-                string message = "Error: AlazarSetTriggerTimeout failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                System.Windows.MessageBox.Show(message,
-                    "Alazar error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                }
-
-            retCode = AlazarAPI.AlazarSetTriggerDelay(boardHandle, 128);
-                if (retCode != AlazarAPI.ApiSuccess)
-                {
-                    string message = "Error: AlazarSetTriggerDelay failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                    System.Windows.MessageBox.Show(message,
-                        "Alazar error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
-            #endregion
-
-            #region alazar calculate record, buffer, acquisition size
-            UInt32 preTriggerSamples        = 0;
-            UInt32 postTriggerSamples       = (UInt32)UIData.nLLAlazarLineLength - preTriggerSamples; //8192-preTS
-            UInt32 recordsPerBuffer         = (UInt32)UIData.nLLLinesPerChunk; // 100; //256 LinesPerChunk
-            UInt32 buffersPerAcquisition    = (UInt32)UIData.nLLChunksPerImage*2;  // 10  // 8 chunksPerImage 
-            UInt32 recordsPerAcquisition    = recordsPerBuffer * buffersPerAcquisition; //256*8=2048 LinesPerAcquisition --> 2048*8192=16,777,216
-            UInt32 channelCount             = 2;
-           
-            // Get the sample size in bits, and the on-board memory size in samples per channel
-            Byte bitsPerSample;
-            UInt32 maxSamplesPerChannel;
-            retCode = AlazarAPI.AlazarGetChannelInfo(boardHandle, &maxSamplesPerChannel, &bitsPerSample);
-                if (retCode != AlazarAPI.ApiSuccess)
-            {
-                string message = "Error: AlazarGetChannelInfo failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                System.Windows.MessageBox.Show(message,
-                    "Alazar error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-            }
-
-            // Calculate the size of each DMA buffer in bytes
-            UInt32 bytesPerSample = 2; //((UInt32)bitsPerSample + 7) / 8;
-            UInt32 samplesPerRecord = preTriggerSamples + postTriggerSamples; //8192
-            UInt32 bytesPerRecord = (bytesPerSample * samplesPerRecord); // 2*8192=16,384
-            UInt32 bytesPerBuffer = bytesPerRecord * recordsPerBuffer * channelCount; //2*8192 * 256 * 2 == 8192*256*4 == 8192*1024 == 8192kb 
-            #endregion
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
@@ -1799,56 +1994,12 @@ namespace nOCT
                 threadData.strAcquireAlazarThreadStatus = "g";
                 while (threadData.mreAcquireAlazarKill.WaitOne(0) == false)
                 {
-                    #region arm Alazar board to begin acquisition
-                    retCode = AlazarAPI.AlazarBeforeAsyncRead(
-                        boardHandle,
-                        AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B,
-                        -(int)preTriggerSamples,
-                        samplesPerRecord,
-                        recordsPerBuffer,
-                        2 * recordsPerAcquisition,
-                        AlazarAPI.ADMA_EXTERNAL_STARTCAPTURE | AlazarAPI.ADMA_NPT | AlazarAPI.ADMA_FIFO_ONLY_STREAMING | AlazarAPI.ADMA_ALLOC_BUFFERS
-                        );
-                    
-                    if (retCode != AlazarAPI.ApiSuccess)
-                    {
-                        string message = "Error: AlazarBeforeAsyncRead failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                        System.Windows.MessageBox.Show(message,
-                            "Alazar error",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                    }
-                    
-                    retCode = AlazarAPI.AlazarSetRecordSize(
-                        boardHandle,
-                        preTriggerSamples,
-                        postTriggerSamples);
-                    if (retCode != AlazarAPI.ApiSuccess)
-                    {
-                        string message = "Error: AlazarSetRecordSize failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                        System.Windows.MessageBox.Show(message,
-                            "Alazar error",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                    }
-
-                    AlazarAPI.AlazarStartCapture(boardHandle); // Arm board to begin the acquisition
-                    if (retCode != AlazarAPI.ApiSuccess)
-                    {
-                        string message = "Error: AlazarStartCapture failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                        System.Windows.MessageBox.Show(message,
-                            "Alazar error",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Warning);
-                    }
-                    #endregion
 
                     nStatus = WaitHandle.WaitAny(pweLoop, 10000);
                     if (nStatus == 0) // nStatus==0 indicates threadData.mreAcquireAlazarKill was set
                     {
-                        AlazarAPI.AlazarAbortAsyncRead(boardHandle); // Abort the acquisition and release resources, 
-                                                                        // must be called after acquisition.
-                                                                        // kill
+                        AlazarAPI.AlazarAbortAsyncRead(handle); // Abort the acquisition and release resources, must be called after acquisition.
+                                                                // kill
                     }  // if (nStatus
 
                     if (nStatus == 1) //nStatus == 1 indicates threadData.mreAcquireNodeReady was set
@@ -1857,30 +2008,13 @@ namespace nOCT
                         threadData.strAcquireAlazarThreadStatus = "G";
                         if (nMode > 0)
                         {
-                            if (threadData.nSystemActual == 0) // What does .nSystemActual==0 indicate? SD-OCT?
+                            if (threadData.nSystemActual == 0) // threadData.nSystemActual==0 denotes OFDI
                             {
                                 threadData.strAcquireAlazarThreadStatus = "Wa";
-                                for(int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
-                                {
-                                        fixed (void* vPtr = threadData.nodeAcquire.Value.pnAlazar[nChunk])
-                                    {
-                                        retCode = AlazarAPI.AlazarWaitNextAsyncBufferComplete(
-                                            boardHandle,
-                                            vPtr,
-                                            bytesPerBuffer, // U32 bytesToCopy -- bytes to copy into buffer
-                                            5000);          // U32 timeout_ms -- time to wait for buffer
-                                        if (retCode != AlazarAPI.ApiSuccess)
-                                        {
-                                            string message = "Error: AlazarWaitNextAsyncBufferComplete failed-- " + AlazarAPI.AlazarErrorToText(retCode);
-                                            System.Windows.MessageBox.Show(message,
-                                                "Alazar error",
-                                                MessageBoxButton.OK,
-                                                MessageBoxImage.Warning);
-                                            break;
-                                        }
-                                    }
-                                }
-                                // real acquisition
+
+                                #region Acquire Alazar Data
+                                AcquireAlazarData(handle);
+                                #endregion Acquire Alazar Data
                             }
                             else
                             {
