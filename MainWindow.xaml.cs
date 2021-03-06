@@ -1757,7 +1757,7 @@ namespace nOCT
 
             bool success = true;
 
-            ushort[] output = new ushort[bytesPerBuffer * buffersPerAcquisition / 4];
+            ushort[] output = new ushort[bytesPerBuffer * buffersPerAcquisition /4]; // /2]; // 1ushort per 2bytes, so ushort[] output should be 1/2 bytesPerAcquisition
 
             try
             {
@@ -1846,13 +1846,13 @@ namespace nOCT
                                 AlazarAPI.AlazarErrorToText(retCode));
                         }
 
-                        buffersCompleted++;
-                        bytesTransferred += bytesPerBuffer;
-
                         // Copy buffer-acquisition to linked list node
                         //Array.Copy(buffer, threadData.nodeAcquire.Value.pnAlazar[nChunk], buffer.Length);
                         Buffer.BlockCopy(buffer, 0, output, bufferCount * (int)bytesPerBuffer, buffer.Length);
                         bufferCount++;
+
+                        buffersCompleted++;
+                        bytesTransferred += bytesPerBuffer;
 
                         #region NOTE: acquisition characteristics
                         // While you are processing this buffer, the board is already
@@ -1888,7 +1888,7 @@ namespace nOCT
 
                     
                     #region validate AcquireAlazarData
-                    /*
+                    
                     string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\control.bin";
                     FileStream fs = File.Open(strFilename, FileMode.Create);
                     BinaryWriter binWriter = new BinaryWriter(fs);
@@ -1897,7 +1897,7 @@ namespace nOCT
                     for (int mPoint = 0; mPoint < output.Length; mPoint++)
                         binWriter.Write(output[mPoint]);
                     fs.Close();
-                    */
+                    
                     #endregion validate AcquireAlazarData
 
                     #region blit to linked-list node
@@ -1909,22 +1909,6 @@ namespace nOCT
                             threadData.nodeAcquire.Value.pnAlazar[nChunk].Length);
                     }
                     #endregion blit to linked-list node
-
-                    #region validate copy into linked list-node
-
-                    string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\experiment.bin";
-                    FileStream fs = File.Open(strFilename, FileMode.Create);
-                    BinaryWriter binWriter = new BinaryWriter(fs);
-
-                    fs.Seek(0, SeekOrigin.Begin);
-                    for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++){
-                        for (int nPoint = 0; nPoint < threadData.nodeAcquire.Value.pnAlazar[nChunk].Length; nPoint++)
-                            binWriter.Write(threadData.nodeAcquire.Value.pnAlazar[nChunk][nPoint]);
-                    } 
-                    fs.Close();
-                    
-                    #endregion validate copy into linked list-node
-
 
                     // Results
                     double transferTime_sec = ((double)(System.Environment.TickCount - startTickCount)) / 1000;
@@ -4012,78 +3996,17 @@ namespace nOCT
 
                         #region read from process1 buffers, calculate and subtract reference
 
-
                         #region validate Process1Thread
                         /*
-                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\controlP1.bin";
+                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\check_P1start_pfProcess1AlazarMZI.bin";
                         FileStream fs = File.Open(strFilename, FileMode.Create);
                         BinaryWriter binWriter = new BinaryWriter(fs);
 
                         fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < threadData.pnProcess1Alazar.Length; mPoint++)
-                            binWriter.Write(threadData.pnProcess1Alazar[mPoint]);
-
-                        fs.Close();
-                        */
-                        #endregion validate Process1Thread
-
-                        #region separate interleaved Alazar acquisitions 
-                        /*
-                        if (UIData.nLLSystemType == 3)
-                        {
-                            int destinationIndex = 0;
-                            for(int sourceIndex = 0; sourceIndex < threadData.pnProcess1Alazar.Length; sourceIndex++)
-                            {
-                                if (sourceIndex % 2 == 0) threadData.pnProcess1AlazarOCT[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
-                                if (sourceIndex % 2 == 1)
-                                {
-                                    threadData.pnProcess1AlazarMZI[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
-                                    destinationIndex++;
-                                }
-                            }
-                        }
-                        */
-                        #endregion separate interleaved Alazar acquisitions
-
-                        #region validate Process1Thread
-                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testOCT.bin";
-                        fs = File.Open(strFilename, FileMode.Create);
-                        binWriter = new BinaryWriter(fs);
-                        fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarOCT.Length; mPoint++)
-                            binWriter.Write(threadData.pnProcess1AlazarOCT[mPoint]);
-                        fs.Close();
-
-                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testMZI.bin";
-                        fs = File.Open(strFilename, FileMode.Create);
-                        binWriter = new BinaryWriter(fs);
-                        fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarMZI.Length; mPoint++)
-                            binWriter.Write(threadData.pnProcess1AlazarMZI[mPoint]);
-                        fs.Close();
-                        #endregion validate Process1Thread
-
-                        #region convert UInt16 arrays to float arrays
-                        Array.Copy(threadData.pnProcess1AlazarOCT, threadData.pfProcess1AlazarOCT, threadData.pnProcess1AlazarOCT.Length);
-                        Array.Copy(threadData.pnProcess1AlazarMZI, threadData.pfProcess1AlazarMZI, threadData.pnProcess1AlazarMZI.Length);
-                        #endregion convert UInt16 arrays to float arrays
-
-                        #region validate Process1Thread
-                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testOCTfloat.bin";
-                        fs = File.Open(strFilename, FileMode.Create);
-                        binWriter = new BinaryWriter(fs);
-                        fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarOCT.Length; mPoint++)
-                            binWriter.Write(threadData.pfProcess1AlazarOCT[mPoint]);
-                        fs.Close();
-
-                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\testMZIfloat.bin";
-                        fs = File.Open(strFilename, FileMode.Create);
-                        binWriter = new BinaryWriter(fs);
-                        fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < threadData.pnProcess1AlazarMZI.Length; mPoint++)
+                        for (int mPoint = 0; mPoint < threadData.pfProcess1AlazarMZI.Length; mPoint++)
                             binWriter.Write(threadData.pfProcess1AlazarMZI[mPoint]);
                         fs.Close();
+                        */
                         #endregion validate Process1Thread
 
                         #region calculate reference arrays
@@ -4091,6 +4014,7 @@ namespace nOCT
                         switch (UIData.nLLSystemType)
                         {
                             case 0: // SD-OCT
+                                #region SD-OCT
                                 switch (UIData.nLRReferenceMethod)
                                 {
                                     case 0:  // none
@@ -4126,7 +4050,9 @@ namespace nOCT
                                         break;
                                 }   // switch (UIData.nLRCalibrationReferenceMethod
                                 break;
+                            #endregion SD-OCT
                             case 1: // PS SD-OCT
+                                #region PS SD-OCT
                                 switch (UIData.nLRReferenceMethod)
                                 {
                                     case 0:  // none
@@ -4222,14 +4148,18 @@ namespace nOCT
                                         break;
                                 }   // switch (UIData.nLRCalibrationReferenceMethod
                                 break;
+                                #endregion PS SD-OCT
                             case 2: // line field
                                 break;
                             case 3: // OFDI
+                                #region OFDI
                                 switch (UIData.nLRReferenceMethod)
                                 {
                                     case 0:  // none
+                                        #region none
                                         Array.Clear(pfReference, 0, pfReference.Length);
                                         break;
+                                        #endregion none
                                     case 1:  // use average
                                         #region use average
                                         Array.Clear(pfSum, 0, pfSum.Length);
@@ -4256,10 +4186,13 @@ namespace nOCT
                                         Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
                                         break;
                                     case 3:  // use recorded
+                                        #region use recorded
                                         Buffer.BlockCopy(pfReferenceRecorded, 0, pfReference, 0, pfReference.Length * sizeof(float));
                                         break;
+                                        #endregion use recorded
                                 }   // switch (UIData.nLRCalibrationReferenceMethod                            case 4: // PS OFDI
                                 break;
+                                #endregion OFDI
                         }   // switch (UIData.nLLSystemType
 
                         #endregion  // calculate reference arrays
