@@ -4173,18 +4173,19 @@ namespace nOCT
                                         #endregion use average
                                         break;
                                     case 2:  // record
-                                        #region calculate parallel even
+                                        #region record and copy into pfReferenceRecorded
                                         Array.Clear(pfSum, 0, pfSum.Length);
                                         for (nAline = 0; nAline < nNumberLines; nAline++)
                                         {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
                                         for (nPoint = 0; nPoint < nLineLength; nPoint++)
                                             pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
-                                        #endregion calculate parallel even
+
                                         Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
                                         break;
+                                        #endregion record and copy into pfReferenceRecorded
                                     case 3:  // use recorded
                                         #region use recorded
                                         Buffer.BlockCopy(pfReferenceRecorded, 0, pfReference, 0, pfReference.Length * sizeof(float));
