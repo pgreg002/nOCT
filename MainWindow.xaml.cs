@@ -4204,6 +4204,7 @@ namespace nOCT
                             switch (UIData.nLLSystemType)
                             {
                                 case 0: // SD-OCT
+                                    #region SD-OCT
                                     switch (UIData.nLRReferenceDisplay)
                                     {
                                         case 0:  // all
@@ -4223,7 +4224,9 @@ namespace nOCT
                                             break;
                                     }   // switch (UIData.nLRCalibrationReferenceDisplay
                                     break;
+                                    #endregion SD-OCT
                                 case 1: // PS SD-OCT
+                                    #region PS SD-OCT
                                     switch (UIData.nLRReferenceDisplay)
                                     {
                                         case 0:  // all
@@ -4258,9 +4261,13 @@ namespace nOCT
                                             break;
                                     }   // switch (UIData.nLRCalibrationReferenceDisplay
                                     break;
+                                    #endregion PS SD-OCT
                                 case 2: // line field
                                     break;
                                 case 3: // OFDI
+                                    #region OFDI
+                                    Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), UIData.pfReference, 0 * nLineLength * sizeof(float), nLineLength * sizeof(float));
+                                    #endregion OFDI
                                     break;
                                 case 4: // PS OFDI
                                     break;
