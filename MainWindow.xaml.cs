@@ -4165,7 +4165,7 @@ namespace nOCT
                                         Array.Clear(pfSum, 0, pfSum.Length);
                                         for (nAline = 0; nAline < nNumberLines; nAline++)
                                         {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
                                         for (nPoint = 0; nPoint < nLineLength; nPoint++)
