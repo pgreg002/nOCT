@@ -3831,7 +3831,9 @@ namespace nOCT
             #region define general use variables
             int nAline, nPoint;
             int nNumberLines = threadData.nRawNumberAlines;
+            int nNumberLinesAlazarChannel = threadData.nRawNumberAlines / 2;
             int nLineLength = threadData.nRawAlineLength;
+            int nLineLengthAlazar = UIData.nLLAlazarLineLength;
             float[] pfLine = new float[nLineLength];
             float[] pfTemp = new float[nLineLength];
             float[] pfSum = new float[nLineLength];
@@ -3856,7 +3858,7 @@ namespace nOCT
                 case 2: // line field
                     break;
                 case 3: // OFDI
-                    nNumberSets = nNumberLines;
+                    nNumberSets = nNumberLinesAlazarChannel;
                     nNumberLinesPerSet = 1;
                     nNumberCalibrationDisplayLines = 1;
                     break;
@@ -3881,8 +3883,8 @@ namespace nOCT
                 case 2: // line field
                     break;
                 case 3: // OFDI
-                    pfReference = new float[nLineLength];
-                    pfReferenceRecorded = new float[nLineLength];
+                    pfReference = new float[nLineLengthAlazar];
+                    pfReferenceRecorded = new float[nLineLengthAlazar];
                     break;
                 case 4: // PS OFDI
                     break;
@@ -3962,6 +3964,7 @@ namespace nOCT
             #region for display
 
             float[] pfIntensity = new float[nNumberLines * nLineLength];
+            float[] pfIntensityAlazar = new float[nNumberLinesAlazarChannel * UIData.nLLAlazarLineLength];
 
             #endregion for display
 
@@ -4163,25 +4166,25 @@ namespace nOCT
                                     case 1:  // use average
                                         #region use average
                                         Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline++)
+                                        for (nAline = 0; nAline < nNumberLinesAlazarChannel; nAline++)
                                         {
-                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLengthAlazar * sizeof(float), pfLine, 0, nLineLengthAlazar * sizeof(float));
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
+                                        for (nPoint = 0; nPoint < nLineLengthAlazar; nPoint++)
+                                            pfReference[0 * nLineLengthAlazar + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesAlazarChannel));
                                         #endregion use average
                                         break;
                                     case 2:  // record
                                         #region record and copy into pfReferenceRecorded
                                         Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline++)
+                                        for (nAline = 0; nAline < nNumberLinesAlazarChannel; nAline++)
                                         {
-                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLengthAlazar * sizeof(float), pfLine, 0, nLineLengthAlazar * sizeof(float));
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
+                                        for (nPoint = 0; nPoint < nLineLengthAlazar; nPoint++)
+                                            pfReference[0 * nLineLengthAlazar + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesAlazarChannel));
 
                                         Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
                                         break;
