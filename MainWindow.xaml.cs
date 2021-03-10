@@ -3831,9 +3831,8 @@ namespace nOCT
             #region define general use variables
             int nAline, nPoint;
             int nNumberLines = threadData.nRawNumberAlines;
-            int nNumberLinesAlazarChannel = threadData.nRawNumberAlines / 2;
+            int nNumberLinesPerChannel = threadData.nRawNumberAlines / 2;
             int nLineLength = threadData.nRawAlineLength;
-            int nLineLengthAlazar = UIData.nLLAlazarLineLength;
             float[] pfLine = new float[nLineLength];
             float[] pfTemp = new float[nLineLength];
             float[] pfSum = new float[nLineLength];
@@ -3846,19 +3845,23 @@ namespace nOCT
             switch (UIData.nLLSystemType)
             {
                 case 0: // SD-OCT
+                    #region SD-OCT
                     nNumberSets = 1;
                     nNumberLinesPerSet = nNumberLines;
                     nNumberCalibrationDisplayLines = 1;
                     break;
+                    #endregion SD-OCT
                 case 1: // PS SD-OCT
+                    #region PS SD-OCT
                     nNumberSets = 4;
                     nNumberLinesPerSet = nNumberLines >> 1;
                     nNumberCalibrationDisplayLines = 4;
                     break;
+                    #endregion PS SD-OCT
                 case 2: // line field
                     break;
                 case 3: // OFDI
-                    nNumberSets = nNumberLinesAlazarChannel;
+                    nNumberSets = nNumberLines;
                     nNumberLinesPerSet = 1;
                     nNumberCalibrationDisplayLines = 1;
                     break;
@@ -3873,18 +3876,22 @@ namespace nOCT
             switch (UIData.nLLSystemType)
             {
                 case 0: // SD-OCT
+                    #region SD-OCT
                     pfReference = new float[nLineLength];
                     pfReferenceRecorded = new float[nLineLength];
                     break;
+                    #endregion SD-OCT
                 case 1: // PS SD-OCT
+                    #region PS SD-OCT
                     pfReference = new float[4 * nLineLength];
                     pfReferenceRecorded = new float[4 * nLineLength];
                     break;
+                    #endregion PS SD-OCT
                 case 2: // line field
                     break;
                 case 3: // OFDI
-                    pfReference = new float[nLineLengthAlazar];
-                    pfReferenceRecorded = new float[nLineLengthAlazar];
+                    pfReference = new float[nLineLength];
+                    pfReferenceRecorded = new float[nLineLength];
                     break;
                 case 4: // PS OFDI
                     break;
@@ -3964,7 +3971,7 @@ namespace nOCT
             #region for display
 
             float[] pfIntensity = new float[nNumberLines * nLineLength];
-            float[] pfIntensityAlazar = new float[nNumberLinesAlazarChannel * UIData.nLLAlazarLineLength];
+            float[] pfIntensityAlazar = new float[nNumberLines * UIData.nLLAlazarLineLength];
 
             #endregion for display
 
@@ -4166,25 +4173,25 @@ namespace nOCT
                                     case 1:  // use average
                                         #region use average
                                         Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLinesAlazarChannel; nAline++)
+                                        for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
                                         {
-                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLengthAlazar * sizeof(float), pfLine, 0, nLineLengthAlazar * sizeof(float));
+                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLengthAlazar; nPoint++)
-                                            pfReference[0 * nLineLengthAlazar + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesAlazarChannel));
+                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
                                         #endregion use average
                                         break;
                                     case 2:  // record
                                         #region record and copy into pfReferenceRecorded
                                         Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLinesAlazarChannel; nAline++)
+                                        for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
                                         {
-                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLengthAlazar * sizeof(float), pfLine, 0, nLineLengthAlazar * sizeof(float));
+                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLengthAlazar; nPoint++)
-                                            pfReference[0 * nLineLengthAlazar + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesAlazarChannel));
+                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
 
                                         Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
                                         break;
@@ -4303,9 +4310,10 @@ namespace nOCT
                                 }
                                 for (nPoint = 0; nPoint < nLineLength; nPoint++)
                                     pfCalibrationData[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
-                                #endregion  // all lines
                                 break;
+                                #endregion  // all lines
                             case 1: // PS SD-OCT
+                                #region PS SD-OCT
                                 #region parallel even
                                 Array.Clear(pfSum, 0, pfSum.Length);
                                 Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
@@ -4358,8 +4366,8 @@ namespace nOCT
                                 for (nPoint = 0; nPoint < nLineLength; nPoint++)
                                     pfCalibrationData[3 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
                                 #endregion  // parallel odd
-
                                 break;
+                                #endregion PS SD-OCT
                             case 2: // line field
                                 break;
                             case 3: // OFDI
