@@ -1888,7 +1888,7 @@ namespace nOCT
 
                     
                     #region validate AcquireAlazarData
-                    
+                    /*
                     string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\control.bin";
                     FileStream fs = File.Open(strFilename, FileMode.Create);
                     BinaryWriter binWriter = new BinaryWriter(fs);
@@ -1897,7 +1897,7 @@ namespace nOCT
                     for (int mPoint = 0; mPoint < output.Length; mPoint++)
                         binWriter.Write(output[mPoint]);
                     fs.Close();
-                    
+                    */
                     #endregion validate AcquireAlazarData
 
                     #region blit to linked-list node
@@ -4006,19 +4006,6 @@ namespace nOCT
 
                         #region read from process1 buffers, calculate and subtract reference
 
-                        #region validate Process1Thread
-                        /*
-                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\check_P1start_pfProcess1AlazarMZI.bin";
-                        FileStream fs = File.Open(strFilename, FileMode.Create);
-                        BinaryWriter binWriter = new BinaryWriter(fs);
-
-                        fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < threadData.pfProcess1AlazarMZI.Length; mPoint++)
-                            binWriter.Write(threadData.pfProcess1AlazarMZI[mPoint]);
-                        fs.Close();
-                        */
-                        #endregion validate Process1Thread
-
                         #region calculate reference arrays
 
                         switch (UIData.nLLSystemType)
@@ -4178,8 +4165,9 @@ namespace nOCT
                                             Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
+
                                         for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
+                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesPerChannel));
                                         #endregion use average
                                         break;
                                     case 2:  // record
@@ -4191,7 +4179,7 @@ namespace nOCT
                                             pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
                                         }   // for (nAline
                                         for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
+                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesPerChannel));
 
                                         Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
                                         break;
@@ -4205,6 +4193,28 @@ namespace nOCT
                                 break;
                                 #endregion OFDI
                         }   // switch (UIData.nLLSystemType
+
+                        #region validate Process1Thread
+                        
+                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\calcRef_avg.bin";
+                        FileStream fs = File.Open(strFilename, FileMode.Create);
+                        BinaryWriter binWriter = new BinaryWriter(fs);
+
+                        fs.Seek(0, SeekOrigin.Begin);
+                        for (int mPoint = 0; mPoint < pfReference.Length; mPoint++)
+                            binWriter.Write(pfReference[mPoint]);
+                        fs.Close();
+
+                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\OCT.bin";
+                        fs = File.Open(strFilename, FileMode.Create);
+                        binWriter = new BinaryWriter(fs);
+
+                        fs.Seek(0, SeekOrigin.Begin);
+                        for (int mPoint = 0; mPoint < threadData.pfProcess1AlazarOCT.Length; mPoint++)
+                            binWriter.Write(threadData.pfProcess1AlazarOCT[mPoint]);
+                        fs.Close();
+
+                        #endregion validate Process1Thread
 
                         #endregion  // calculate reference arrays
 
