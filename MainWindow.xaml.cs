@@ -3703,7 +3703,6 @@ namespace nOCT
 
             if (nLeft >= nRight)
                 nRight = nLeft + 1;
-
             #endregion get mask parameters (and error check)
 
             #region actual calculation
@@ -4375,7 +4374,7 @@ namespace nOCT
                                 Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
                                 
                                 #region validate Process1Thread
-
+                                /*
                                 string strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfRef.bin";
                                 FileStream fS = File.Open(strPath, FileMode.Create);
                                 BinaryWriter bW = new BinaryWriter(fS);
@@ -4391,6 +4390,7 @@ namespace nOCT
                                 for (int mPoint = 0; mPoint < pfTemp.Length; mPoint++)
                                     bW.Write(pfTemp[mPoint]);
                                 fS.Close();
+                                */
                                 #endregion validate Process1Thread
 
                                 for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
@@ -4404,7 +4404,7 @@ namespace nOCT
                                     pfCalibrationData[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesPerChannel));
 
                                 #region validate Process1Thread
-                                
+                                /*
                                 string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\rawOCT.bin";
                                 FileStream fs = File.Open(strFilename, FileMode.Create);
                                 BinaryWriter binWriter = new BinaryWriter(fs);
@@ -4422,7 +4422,7 @@ namespace nOCT
                                 for (int mPoint = 0; mPoint < pfOCTData.Length; mPoint++)
                                     binWriter.Write(pfOCTData[mPoint]);
                                 fs.Close();
-                                
+                                */
                                 #endregion validate Process1Thread
                                 break;
                                 #endregion OFDI
