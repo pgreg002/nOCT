@@ -8,7 +8,7 @@
 #undef TRUEDAQ
 
 //#define TRUEIMAQ
-#undef TRUEIMAQ
+//#undef TRUEIMAQ
 
 #define TRUECUDA
 //#undef TRUECUDA
@@ -3840,6 +3840,7 @@ namespace nOCT
 
             #region define number of sets and number of lines per set
             int nNumberSets = 0;
+            int nNumberSetsPerChannel = 0;
             int nNumberLinesPerSet = 0;
             int nNumberCalibrationDisplayLines = 0;
             switch (UIData.nLLSystemType)
@@ -3862,6 +3863,7 @@ namespace nOCT
                     break;
                 case 3: // OFDI
                     nNumberSets = nNumberLines;
+                    nNumberSetsPerChannel = nNumberLinesPerChannel;
                     nNumberLinesPerSet = 1;
                     nNumberCalibrationDisplayLines = 1;
                     break;
@@ -3958,8 +3960,16 @@ namespace nOCT
 
             #region necessary for calculation
 
-            float[] pfOCTData = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
-
+            float[] pfOCTData;
+            switch (UIData.nLLSystemType)
+            {
+                default:
+                    pfOCTData = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
+                    break;
+                case 3: // OFDI
+                    pfOCTData = new float[nNumberSetsPerChannel * nNumberLinesPerSet * nLineLength];
+                    break;
+            }
             float[] pfR = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
             float[] pfI = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
 
@@ -4194,28 +4204,6 @@ namespace nOCT
                                 #endregion OFDI
                         }   // switch (UIData.nLLSystemType
 
-                        #region validate Process1Thread
-                        
-                        string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\calcRef_avg.bin";
-                        FileStream fs = File.Open(strFilename, FileMode.Create);
-                        BinaryWriter binWriter = new BinaryWriter(fs);
-
-                        fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < pfReference.Length; mPoint++)
-                            binWriter.Write(pfReference[mPoint]);
-                        fs.Close();
-
-                        strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\OCT.bin";
-                        fs = File.Open(strFilename, FileMode.Create);
-                        binWriter = new BinaryWriter(fs);
-
-                        fs.Seek(0, SeekOrigin.Begin);
-                        for (int mPoint = 0; mPoint < threadData.pfProcess1AlazarOCT.Length; mPoint++)
-                            binWriter.Write(threadData.pfProcess1AlazarOCT[mPoint]);
-                        fs.Close();
-
-                        #endregion validate Process1Thread
-
                         #endregion  // calculate reference arrays
 
                         #region update graphs if requested
@@ -4381,7 +4369,44 @@ namespace nOCT
                             case 2: // line field
                                 break;
                             case 3: // OFDI
+                                #region OFDI
+                                Array.Clear(pfSum, 0, pfSum.Length);
+
+                                Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
+                                
+                                for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
+                                {
+                                    Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
+                                    pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
+                                    Buffer.BlockCopy(pfLine, 0, pfOCTData, (0 * nNumberLinesPerSet + nAline) * nLineLength * sizeof(float), nLineLength * sizeof(float));
+                                }
+                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                    pfCalibrationData[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesPerChannel));
+
+                                #region validate Process1Thread
+                                
+                                string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\rawOCT.bin";
+                                FileStream fs = File.Open(strFilename, FileMode.Create);
+                                BinaryWriter binWriter = new BinaryWriter(fs);
+
+                                fs.Seek(0, SeekOrigin.Begin);
+                                for (int mPoint = 0; mPoint < threadData.pfProcess1AlazarOCT.Length; mPoint++)
+                                    binWriter.Write(threadData.pfProcess1AlazarOCT[mPoint]);
+                                fs.Close();
+
+                                strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\subtractedOCT.bin";
+                                fs = File.Open(strFilename, FileMode.Create);
+                                binWriter = new BinaryWriter(fs);
+
+                                fs.Seek(0, SeekOrigin.Begin);
+                                for (int mPoint = 0; mPoint < pfOCTData.Length; mPoint++)
+                                    binWriter.Write(pfOCTData[mPoint]);
+                                fs.Close();
+                                
+                                #endregion validate Process1Thread
                                 break;
+                                #endregion OFDI
                             case 4: // PS OFDI
                                 break;
                         }   // switch (UIData.nLLSystemType
@@ -4484,7 +4509,7 @@ namespace nOCT
                         switch (threadData.nProcess1ProcessingType)
                         {
                             case 0:  // NI
-                                applyCalibration(nNumberSets, nNumberLinesPerSet, ref pfOCTData, pfK, pnIndex);
+                                //applyCalibration(nNumberSets, nNumberLinesPerSet, ref pfOCTData, pfK, pnIndex);
                                 // in other cases, the calibrated data stays in the dll, so just 'pfOCTData', not 'ref pfOCTData'
                                 break;
                             case 1:  // IPP
