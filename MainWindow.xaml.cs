@@ -4373,26 +4373,6 @@ namespace nOCT
 
                                 Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
                                 
-                                #region validate Process1Thread
-                                /*
-                                string strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfRef.bin";
-                                FileStream fS = File.Open(strPath, FileMode.Create);
-                                BinaryWriter bW = new BinaryWriter(fS);
-                                fS.Seek(0, SeekOrigin.Begin);
-                                for (int mPoint = 0; mPoint < pfReference.Length; mPoint++)
-                                    bW.Write(pfReference[mPoint]);
-                                fS.Close();
-
-                                strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfTemp.bin";
-                                fS = File.Open(strPath, FileMode.Create);
-                                bW = new BinaryWriter(fS);
-                                fS.Seek(0, SeekOrigin.Begin);
-                                for (int mPoint = 0; mPoint < pfTemp.Length; mPoint++)
-                                    bW.Write(pfTemp[mPoint]);
-                                fS.Close();
-                                */
-                                #endregion validate Process1Thread
-
                                 for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
                                 {
                                     Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
@@ -4443,7 +4423,27 @@ namespace nOCT
                         {
                             #region calculate mask
                             calculateMask(UIData.nCalibrationDepthLeft, UIData.nCalibrationDepthRight, UIData.nCalibrationDepthRound, ref pfCalibrationMask);
+                            #region validate Process1Thread
+                            
+                            string strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
+                            FileStream fS = File.Open(strPath, FileMode.Create);
+                            BinaryWriter bW = new BinaryWriter(fS);
+                            fS.Seek(0, SeekOrigin.Begin);
+                            for (int mPoint = 0; mPoint < pfCalibrationMask.Length; mPoint++)
+                                bW.Write(pfCalibrationMask[mPoint]);
+                            fS.Close();
+                            /*
+                            strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
+                            fS = File.Open(strPath, FileMode.Create);
+                            bW = new BinaryWriter(fS);
+                            fS.Seek(0, SeekOrigin.Begin);
+                            for (int mPoint = 0; mPoint < pfTemp.Length; mPoint++)
+                                bW.Write(pfTemp[mPoint]);
+                            fS.Close();
+                            */
+                            #endregion validate Process1Thread
                             #endregion  // calculate mask
+
                             #region get left / right phase parameters (and error check)
                             nCalibrationPhaseLeft = UIData.nCalibrationPhaseLeft;
                             if (nCalibrationPhaseLeft < 0)
