@@ -4530,7 +4530,7 @@ namespace nOCT
                         switch (threadData.nProcess1ProcessingType)
                         {
                             case 0:  // NI
-                                //applyCalibration(nNumberSets, nNumberLinesPerSet, ref pfOCTData, pfK, pnIndex);
+                                applyCalibration(nNumberSets, nNumberLinesPerSet, ref pfOCTData, pfK, pnIndex);
                                 // in other cases, the calibrated data stays in the dll, so just 'pfOCTData', not 'ref pfOCTData'
                                 break;
                             case 1:  // IPP
