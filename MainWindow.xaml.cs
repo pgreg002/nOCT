@@ -1,20 +1,20 @@
 ﻿
 #region hardware settings
 
-//#define TRUEALAZAR
-#undef TRUEALAZAR
+#define TRUEALAZAR
+//#undef TRUEALAZAR
 
 //#define TRUEDAQ
 #undef TRUEDAQ
 
 //#define TRUEIMAQ
-//#undef TRUEIMAQ
+#undef TRUEIMAQ
 
 #define TRUECUDA
 //#undef TRUECUDA
 
-#define TRUEIPP
-//#undef TRUEIPP
+//#define TRUEIPP
+#undef TRUEIPP
 
 #endregion  // hardware settings
 
@@ -4422,9 +4422,11 @@ namespace nOCT
                         if (UIData.bCalibrationActive)
                         {
                             #region calculate mask
-                            calculateMask(UIData.nCalibrationDepthLeft, UIData.nCalibrationDepthRight, UIData.nCalibrationDepthRound, ref pfCalibrationMask);
-                            #region validate Process1Thread
                             
+                            calculateMask(UIData.nCalibrationDepthLeft, UIData.nCalibrationDepthRight, UIData.nCalibrationDepthRound, ref pfCalibrationMask);
+
+                            #region validate Process1Thread
+                            /*
                             string strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
                             FileStream fS = File.Open(strPath, FileMode.Create);
                             BinaryWriter bW = new BinaryWriter(fS);
@@ -4432,7 +4434,7 @@ namespace nOCT
                             for (int mPoint = 0; mPoint < pfCalibrationMask.Length; mPoint++)
                                 bW.Write(pfCalibrationMask[mPoint]);
                             fS.Close();
-                            /*
+                            
                             strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
                             fS = File.Open(strPath, FileMode.Create);
                             bW = new BinaryWriter(fS);
