@@ -4422,28 +4422,7 @@ namespace nOCT
                         if (UIData.bCalibrationActive)
                         {
                             #region calculate mask
-                            
                             calculateMask(UIData.nCalibrationDepthLeft, UIData.nCalibrationDepthRight, UIData.nCalibrationDepthRound, ref pfCalibrationMask);
-
-                            #region validate Process1Thread
-                            /*
-                            string strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
-                            FileStream fS = File.Open(strPath, FileMode.Create);
-                            BinaryWriter bW = new BinaryWriter(fS);
-                            fS.Seek(0, SeekOrigin.Begin);
-                            for (int mPoint = 0; mPoint < pfCalibrationMask.Length; mPoint++)
-                                bW.Write(pfCalibrationMask[mPoint]);
-                            fS.Close();
-                            
-                            strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
-                            fS = File.Open(strPath, FileMode.Create);
-                            bW = new BinaryWriter(fS);
-                            fS.Seek(0, SeekOrigin.Begin);
-                            for (int mPoint = 0; mPoint < pfTemp.Length; mPoint++)
-                                bW.Write(pfTemp[mPoint]);
-                            fS.Close();
-                            */
-                            #endregion validate Process1Thread
                             #endregion  // calculate mask
 
                             #region get left / right phase parameters (and error check)
@@ -4476,6 +4455,25 @@ namespace nOCT
                                     break;
                                 case 2:  // CUDA
                                     #if TRUECUDA
+                                    #region validate Process1Thread
+                                        
+                                        string strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfRawOCT.bin";
+                                        FileStream fS = File.Open(strPath, FileMode.Create);
+                                        BinaryWriter bW = new BinaryWriter(fS);
+                                        fS.Seek(0, SeekOrigin.Begin);
+                                        for (int mPoint = 0; mPoint < pfOCTData.Length; mPoint++)
+                                            bW.Write(pfOCTData[mPoint]);
+                                        fS.Close();
+                                        /*
+                                        strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
+                                        fS = File.Open(strPath, FileMode.Create);
+                                        bW = new BinaryWriter(fS);
+                                        fS.Seek(0, SeekOrigin.Begin);
+                                        for (int mPoint = 0; mPoint < pfTemp.Length; mPoint++)
+                                            bW.Write(pfTemp[mPoint]);
+                                        fS.Close();
+                                        */
+                                    #endregion validate Process1Thread
                                     Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
                                     #endif  // TRUECUDA
                                     break;
