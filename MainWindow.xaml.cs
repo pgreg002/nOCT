@@ -1,8 +1,8 @@
 ﻿
 #region hardware settings
 
-#define TRUEALAZAR
-//#undef TRUEALAZAR
+//#define TRUEALAZAR
+#undef TRUEALAZAR
 
 //#define TRUEDAQ
 #undef TRUEDAQ
@@ -13,8 +13,8 @@
 #define TRUECUDA
 //#undef TRUECUDA
 
-//#define TRUEIPP
-#undef TRUEIPP
+#define TRUEIPP
+//#undef TRUEIPP
 
 #endregion  // hardware settings
 
@@ -63,8 +63,6 @@ using Microsoft.VisualBasic.Devices;
 using System.Windows.Forms;
 using System.Reflection;
 
-using AlazarTech;
-
 
 #region more hardware settings
 
@@ -98,7 +96,7 @@ namespace nOCT
         private CUIData UIData;
         LinkedList<CDataNode> nodeList = new LinkedList<CDataNode>();
         private CThreadData threadData = new CThreadData();
-        DispatcherTimer timerUIUpdate = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        DispatcherTimer timerUIUpdate = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(25) };
 
         #if TRUECUDA
         nOCTcudaWrapper cudaWrapper;
@@ -112,7 +110,7 @@ namespace nOCT
         nOCTimaqWrapper imaqWrapper;
         #endif  // TRUEIMAQ
 
-        #endregion  // define semi-globals
+        #endregion define semi-globals
 
 
         public MainWindow()
@@ -122,19 +120,18 @@ namespace nOCT
 
             #region initialize UI
 
-            // initialize UI
             UIData = new CUIData { };
             this.DataContext = UIData;
             InitializeUI();
 
-            #endregion  // initialize UI
+            #endregion initialize UI
 
             #region start UI update timer
 
             timerUIUpdate.Tick += new EventHandler(UIUpdate);
             timerUIUpdate.IsEnabled = true;
 
-            #endregion  // start UI update timer
+            #endregion start UI update timer
 
             GC.Collect();
 
@@ -146,13 +143,10 @@ namespace nOCT
 
             #region populate list of computation devices
 
-            cbLLCUDADevice.Items.Add("NI");
+            cbLLCUDADevice.Items.Add("NI");  // index = 0
+            cbLLCUDADevice.Items.Add("IPP");  // index = 1
 
-            #if TRUEIPP
-            cbLLCUDADevice.Items.Add("IPP");
-            #endif  // TRUEIPP
-
-            #if TRUECUDA
+            #if TRUECUDA // (index for cuda devices starts at 2)
             int nDeviceCount = 0;
             StringBuilder strDeviceName = new StringBuilder(256);
             int nRet = nOCTcudaWrapper.getDeviceCount(ref nDeviceCount);
@@ -163,7 +157,8 @@ namespace nOCT
             }   // for (int nDevice
             #endif  // TRUECUDA
 
-            #endregion  // populate list of computation devices
+            #endregion populate list of computation devices
+
 
             #region load last parameter file (if it exists)
 
@@ -180,7 +175,8 @@ namespace nOCT
                 }   // if (File.Exists(line
             }   // if (File.Exists("lastparameterfilename.txt"
 
-            #endregion  // load lat parameter file
+            #endregion load last parameter file (if it exists)
+
 
             #region set up linked list display
 
@@ -188,7 +184,9 @@ namespace nOCT
             Array.Clear(UIData.pnLinkedList, 0, UIData.pnLinkedList.Length);
             graphLRDiagnostics.DataSource = UIData.pnLinkedList;
 
-            #endregion  // set up linked list display
+            #endregion set up linked list display
+
+            UIData.nConfigState = 0;
 
         }   // private void InitializeUI
 
@@ -221,29 +219,30 @@ namespace nOCT
                     if (parametername == UIData.name_nULTop) UIData.nULTop = int.Parse(parametervalue);
                     if (parametername == UIData.name_nULLeft) UIData.nULLeft = int.Parse(parametervalue);
 
-                    if (parametername == UIData.name_fULAlazarMax) UIData.fULAlazarMax = float.Parse(parametervalue);
-                    if (parametername == UIData.name_fULAlazarMin) UIData.fULAlazarMin = float.Parse(parametervalue);
-
+                    if (parametername == UIData.name_nULDAQChannel) UIData.nULDAQChannel = int.Parse(parametervalue);
                     if (parametername == UIData.name_fULDAQMax) UIData.fULDAQMax = float.Parse(parametervalue);
                     if (parametername == UIData.name_fULDAQMin) UIData.fULDAQMin = float.Parse(parametervalue);
 
-                    if (parametername == UIData.name_nULIMAQCameraIndex) UIData.nULIMAQCameraIndex = int.Parse(parametervalue);
-                    if (parametername == UIData.name_fULIMAQMax) UIData.fULIMAQMax = float.Parse(parametervalue);
-                    if (parametername == UIData.name_fULIMAQMin) UIData.fULIMAQMin = float.Parse(parametervalue);
+                    if (parametername == UIData.name_bULRawDataShowCalibration) UIData.bULRawDataShowCalibration = bool.Parse(parametervalue);
+                    if (parametername == UIData.name_fULRawDataMax) UIData.fULRawDataMax = float.Parse(parametervalue);
+                    if (parametername == UIData.name_fULRawDataMin) UIData.fULRawDataMin = float.Parse(parametervalue);
 
+                    if (parametername == UIData.name_nULIntensityChooser) UIData.nULIntensityChooser = int.Parse(parametervalue);
                     if (parametername == UIData.name_fULIntensityMax) UIData.fULIntensityMax = float.Parse(parametervalue);
                     if (parametername == UIData.name_fULIntensityMin) UIData.fULIntensityMin = float.Parse(parametervalue);
-
 
                     #endregion  // UL
 
                     #region UR
 
                     if (parametername == UIData.name_nURDisplayIndex) UIData.nURDisplayIndex = int.Parse(parametervalue);
-                    if (parametername == UIData.name_nURIntensityTop) UIData.nURIntensityTop = int.Parse(parametervalue);
-                    if (parametername == UIData.name_nURIntensityLeft) UIData.nURIntensityLeft = int.Parse(parametervalue);
-                    if (parametername == UIData.name_nURSpectralBinningTop) UIData.nURSpectralBinningTop = int.Parse(parametervalue);
-                    if (parametername == UIData.name_nURSpectralBinningLeft) UIData.nURSpectralBinningLeft = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nURTop) UIData.nURTop = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nURLeft) UIData.nURLeft = int.Parse(parametervalue);
+
+                    if (parametername == UIData.name_nURIntensityCamera) UIData.nURIntensityCamera = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nURIntensityLines) UIData.nURIntensityLines = int.Parse(parametervalue);
+                    if (parametername == UIData.name_fURIntensityMax) UIData.fURIntensityMax = float.Parse(parametervalue);
+                    if (parametername == UIData.name_fURIntensityMin) UIData.fURIntensityMin = float.Parse(parametervalue);
 
                     #endregion  // UR
 
@@ -272,7 +271,7 @@ namespace nOCT
                     if (parametername == UIData.name_nLLImagesPerVolume) UIData.nLLImagesPerVolume = int.Parse(parametervalue);
                     if (parametername == UIData.name_nLLLinkedListLength) UIData.nLLLinkedListLength = int.Parse(parametervalue);
 
-                    if (parametername == UIData.name_nLLCUDADevice) UIData.nLLCUDADevice = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nComputationDevice) UIData.nComputationDevice = int.Parse(parametervalue);
 
                     if (parametername == UIData.name_strLLFileDirectory) UIData.strLLFileDirectory = parametervalue;
                     if (parametername == UIData.name_strLLFilePrefix) UIData.strLLFilePrefix = parametervalue;
@@ -287,12 +286,29 @@ namespace nOCT
                     if (parametername == UIData.name_fLLRangeSlow) UIData.fLLRangeSlow = float.Parse(parametervalue);
                     if (parametername == UIData.name_nLLDwellFast) UIData.nLLDwellFast = int.Parse(parametervalue);
                     if (parametername == UIData.name_nLLDwellSlow) UIData.nLLDwellSlow = int.Parse(parametervalue);
-                    if (parametername == UIData.name_nLLRoundingFast) UIData.nLLRoundingFast = int.Parse(parametervalue);
-                    if (parametername == UIData.name_nLLRoundingSlow) UIData.nLLRoundingSlow = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nLLRounding) UIData.nLLRounding = int.Parse(parametervalue);
+                    if (parametername == UIData.name_fLLPolModLow) UIData.fLLPolModLow = float.Parse(parametervalue);
+                    if (parametername == UIData.name_fLLPolModHigh) UIData.fLLPolModHigh = float.Parse(parametervalue);
 
                     #endregion  // LL
 
                     #region LR
+
+                    #region output tab
+
+                    if (parametername == UIData.name_bLROutput) UIData.bLROutput = bool.Parse(parametervalue);
+
+                    if (parametername == UIData.name_nOutputDigitalClockType) UIData.nOutputDigitalClockType = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nOutputP0L0Type) UIData.nOutputP0L0Type = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nOutputP0L1Type) UIData.nOutputP0L1Type = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nOutputP0L2Type) UIData.nOutputP0L2Type = int.Parse(parametervalue);
+
+                    if (parametername == UIData.name_nOutputAnalogClockType) UIData.nOutputAnalogClockType = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nOutputAO0Type) UIData.nOutputAO0Type = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nOutputAO1Type) UIData.nOutputAO1Type = int.Parse(parametervalue);
+                    if (parametername == UIData.name_nOutputAO2Type) UIData.nOutputAO2Type = int.Parse(parametervalue);
+
+                    #endregion output tab
 
                     #region processing tab
 
@@ -333,7 +349,6 @@ namespace nOCT
 
                     #endregion  // LR
 
-
                 }   // if (n1
                 line = sr.ReadLine();
             }   // while (line
@@ -358,15 +373,18 @@ namespace nOCT
             #region UL
 
             sw.WriteLine(UIData.name_nULDisplayIndex + "=`" + UIData.nULDisplayIndex + "'");
-            sw.WriteLine(UIData.name_fULAlazarMax + "=`" + UIData.fULAlazarMax + "'");
-            sw.WriteLine(UIData.name_fULAlazarMin + "=`" + UIData.fULAlazarMin + "'");
-            sw.WriteLine(UIData.name_fULDAQMax + "=`" + UIData.fULDAQMax + "'");
-            sw.WriteLine(UIData.name_fULDAQMin + "=`" + UIData.fULDAQMin + "'");
             sw.WriteLine(UIData.name_nULTop + "=`" + UIData.nULTop + "'");
             sw.WriteLine(UIData.name_nULLeft + "=`" + UIData.nULLeft + "'");
-            sw.WriteLine(UIData.name_nULIMAQCameraIndex + "=`" + UIData.nULIMAQCameraIndex + "'");
-            sw.WriteLine(UIData.name_fULIMAQMax + "=`" + UIData.fULIMAQMax + "'");
-            sw.WriteLine(UIData.name_fULIMAQMin + "=`" + UIData.fULIMAQMin + "'");
+
+            sw.WriteLine(UIData.name_nULDAQChannel + "=`" + UIData.nULDAQChannel + "'");
+            sw.WriteLine(UIData.name_fULDAQMax + "=`" + UIData.fULDAQMax + "'");
+            sw.WriteLine(UIData.name_fULDAQMin + "=`" + UIData.fULDAQMin + "'");
+
+            sw.WriteLine(UIData.name_bULRawDataShowCalibration + "=`" + UIData.bULRawDataShowCalibration + "'");
+            sw.WriteLine(UIData.name_fULRawDataMax + "=`" + UIData.fULRawDataMax + "'");
+            sw.WriteLine(UIData.name_fULRawDataMin + "=`" + UIData.fULRawDataMin + "'");
+
+            sw.WriteLine(UIData.name_nULIntensityChooser + "=`" + UIData.nULIntensityChooser + "'");
             sw.WriteLine(UIData.name_fULIntensityMax + "=`" + UIData.fULIntensityMax + "'");
             sw.WriteLine(UIData.name_fULIntensityMin + "=`" + UIData.fULIntensityMin + "'");
 
@@ -375,10 +393,13 @@ namespace nOCT
             #region UR
 
             sw.WriteLine(UIData.name_nURDisplayIndex + "=`" + UIData.nURDisplayIndex + "'");
-            sw.WriteLine(UIData.name_nURIntensityTop + "=`" + UIData.nURIntensityTop + "'");
-            sw.WriteLine(UIData.name_nURIntensityLeft + "=`" + UIData.nURIntensityLeft + "'");
-            sw.WriteLine(UIData.name_nURSpectralBinningTop + "=`" + UIData.nURSpectralBinningTop + "'");
-            sw.WriteLine(UIData.name_nURSpectralBinningLeft + "=`" + UIData.nURSpectralBinningLeft + "'");
+            sw.WriteLine(UIData.name_nURTop + "=`" + UIData.nURTop + "'");
+            sw.WriteLine(UIData.name_nURLeft + "=`" + UIData.nURLeft + "'");
+
+            sw.WriteLine(UIData.name_nURIntensityCamera + "=`" + UIData.nURIntensityCamera + "'");
+            sw.WriteLine(UIData.name_nURIntensityLines + "=`" + UIData.nURIntensityLines + "'");
+            sw.WriteLine(UIData.name_fURIntensityMax + "=`" + UIData.fURIntensityMax + "'");
+            sw.WriteLine(UIData.name_fURIntensityMin + "=`" + UIData.fURIntensityMin + "'");
 
             #endregion  // UR
 
@@ -402,7 +423,7 @@ namespace nOCT
             sw.WriteLine(UIData.name_nLLChunksPerImage + "=`" + UIData.nLLChunksPerImage + "'");
             sw.WriteLine(UIData.name_nLLImagesPerVolume + "=`" + UIData.nLLImagesPerVolume + "'");
             sw.WriteLine(UIData.name_nLLLinkedListLength + "=`" + UIData.nLLLinkedListLength + "'");
-            sw.WriteLine(UIData.name_nLLCUDADevice + "=`" + UIData.nLLCUDADevice + "'");
+            sw.WriteLine(UIData.name_nComputationDevice + "=`" + UIData.nComputationDevice + "'");
             sw.WriteLine(UIData.name_strLLFileDirectory + "=`" + UIData.strLLFileDirectory + "'");
             sw.WriteLine(UIData.name_strLLFilePrefix + "=`" + UIData.strLLFilePrefix + "'");
             sw.WriteLine(UIData.name_nLLFileNumber + "=`" + UIData.nLLFileNumber + "'");
@@ -415,12 +436,29 @@ namespace nOCT
             sw.WriteLine(UIData.name_fLLRangeSlow + "=`" + UIData.fLLRangeSlow + "'");
             sw.WriteLine(UIData.name_nLLDwellFast + "=`" + UIData.nLLDwellFast + "'");
             sw.WriteLine(UIData.name_nLLDwellSlow + "=`" + UIData.nLLDwellSlow + "'");
-            sw.WriteLine(UIData.name_nLLRoundingFast + "=`" + UIData.nLLRoundingFast + "'");
-            sw.WriteLine(UIData.name_nLLRoundingSlow + "=`" + UIData.nLLRoundingSlow + "'");
+            sw.WriteLine(UIData.name_nLLRounding + "=`" + UIData.nLLRounding + "'");
+            sw.WriteLine(UIData.name_fLLPolModLow + "=`" + UIData.fLLPolModLow + "'");
+            sw.WriteLine(UIData.name_fLLPolModHigh + "=`" + UIData.fLLPolModHigh + "'");
 
             #endregion  // LL
 
             #region LR
+
+            #region output tab
+
+            sw.WriteLine(UIData.name_bLROutput + "=`" + UIData.bLROutput + "'");
+
+            sw.WriteLine(UIData.name_nOutputDigitalClockType + "=`" + UIData.nOutputDigitalClockType + "'");
+            sw.WriteLine(UIData.name_nOutputP0L0Type + "=`" + UIData.nOutputP0L0Type + "'");
+            sw.WriteLine(UIData.name_nOutputP0L1Type + "=`" + UIData.nOutputP0L1Type + "'");
+            sw.WriteLine(UIData.name_nOutputP0L2Type + "=`" + UIData.nOutputP0L2Type + "'");
+
+            sw.WriteLine(UIData.name_nOutputAnalogClockType + "=`" + UIData.nOutputAnalogClockType + "'");
+            sw.WriteLine(UIData.name_nOutputAO0Type + "=`" + UIData.nOutputAO0Type + "'");
+            sw.WriteLine(UIData.name_nOutputAO1Type + "=`" + UIData.nOutputAO1Type + "'");
+            sw.WriteLine(UIData.name_nOutputAO2Type + "=`" + UIData.nOutputAO2Type + "'");
+
+            #endregion output tab
 
             #region processing tab
 
@@ -464,6 +502,18 @@ namespace nOCT
         }   // void SaveParameterFile
 
 
+        private void btnUpdateUL_Click(object sender, RoutedEventArgs e)
+        {
+            UIData.bULChange = true;
+        }
+
+
+        private void btnUpdateUR_Click(object sender, RoutedEventArgs e)
+        {
+            UIData.bURChange = true;
+        }
+
+
         void UIUpdate(object sender, EventArgs e)
         {
             var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -475,45 +525,41 @@ namespace nOCT
                 #region ranges changed
                 if (UIData.bULChange)
                 {
-                    #region get min and max from selected tab
-                    float fMin = 0, fMax = 1;
+                    #region get min and max (with error checking)
+
+                    float fMin = 0.0f;
+                    float fMax = 1.0f;
+
                     switch (UIData.nULDisplayIndex)
                     {
-                        case 0:
-                            fMin = UIData.fULAlazarMin;
-                            fMax = UIData.fULAlazarMax;
+                        case 0:  // raw data
+                            fMin = UIData.fULRawDataMin;
+                            fMax = UIData.fULRawDataMax;
                             break;
-                        case 1:
-                            fMin = UIData.fULDAQMin;
-                            fMax = UIData.fULDAQMax;
-                            break;
-                        case 2:
-                            fMin = UIData.fULIMAQMin;
-                            fMax = UIData.fULIMAQMax;
-                            break;
-                        case 3:
+                        case 1:  // intensity
                             fMin = UIData.fULIntensityMin;
                             fMax = UIData.fULIntensityMax;
                             break;
-                    }  // switch (UIData.nULDisplayIndex
-                    #endregion get min and max from selected tab
+                    }
 
-                    if (fMin > fMax)
+                    if (fMax <= fMin)
                         fMax = fMin + 1.0f;
 
+                    #endregion get min and max (with error checking)
+
                     #region set left range
-                    axisULLeftHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength - 1);
+                    axisULLeftHorizontal.Range = new Range<int>(0, threadData.n1LineLength);
                     axisULLeftVertical.Range = new Range<float>(fMin, fMax);
                     #endregion
 
                     #region set top range
-                    axisULTopHorizontal.Range = new Range<int>(0, threadData.nRawNumberAlines - 1);
+                    axisULTopHorizontal.Range = new Range<int>(0, threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration);
                     axisULTopVertical.Range = new Range<float>(fMin, fMax);
                     #endregion
 
                     #region set main range
-                    axisULMainVertical.Range = new Range<float>(0f, (float)(threadData.nRawAlineLength));
-                    axisULMainHorizontal.Range = new Range<float>(0f, (float)(threadData.nRawNumberAlines));
+                    axisULMainVertical.Range = new Range<float>(0f, (float)(threadData.n1LineLength));
+                    axisULMainHorizontal.Range = new Range<float>(0f, (float)(threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration));
                     ColorScaleMarker[] csMarker = new ColorScaleMarker[2];
                     csMarker[0].Color = Colors.White;
                     csMarker[0].Value = fMin;
@@ -521,12 +567,12 @@ namespace nOCT
                     csMarker[1].Value = fMax;
                     csULMain.Markers.RemoveRange(0, 2);
                     csULMain.Markers.AddRange(csMarker);
-                    #endregion
+                    #endregion set main range
 
                     UIData.bULChange = false;
 
                 }   // if (UIData.bULChange
-                #endregion
+                #endregion ranges changed
 
                 if (UIData.bULLeftActive)
                     graphULLeft.Refresh();
@@ -539,9 +585,72 @@ namespace nOCT
 
                 #region UR
 
-//                graphURLeft.Refresh();
-//               graphURTop.Refresh();
-//                graphURMain.Refresh();
+                #region ranges changed
+                if (UIData.bURChange)
+                {
+                    #region get min and max from selected tab
+                    float fMin = 0, fMax = 1;
+                    switch (UIData.nURDisplayIndex)
+                    {
+                        case 0: // none
+                            break;
+                        case 1: // int
+                            fMin = UIData.fURIntensityMin;
+                            fMax = UIData.fURIntensityMax;
+                            break;
+                        case 2: // att
+                            break;
+                        case 3: // ph
+                            break;
+                        case 4: // pol
+                            break;
+                        case 5: // ang
+                            break;
+                        case 6: // ela
+                            break;
+                        case 7: // spt
+                            break;
+                        case 8: // SB
+                            break;
+                    }  // switch (UIData.nURDisplayIndex
+                    #endregion get min and max from selected tab
+
+                    if (fMin > fMax)
+                        fMax = fMin + 1.0f;
+
+                    #region set left range
+                    axisURLeftHorizontal.Range = new Range<int>(0, threadData.n2LineLength);
+                    axisURLeftVertical.Range = new Range<float>(fMin, fMax);
+                    #endregion
+
+                    #region set top range
+                    axisURTopHorizontal.Range = new Range<int>(0, threadData.n2NumberDepthProfilesPerSet);
+                    axisURTopVertical.Range = new Range<float>(fMin, fMax);
+                    #endregion
+
+                    #region set main range
+                    axisURMainVertical.Range = new Range<float>(0f, (float)(threadData.n2LineLength));
+                    axisURMainHorizontal.Range = new Range<float>(0f, (float)(threadData.n2NumberDepthProfilesPerSet));
+                    ColorScaleMarker[] csMarker = new ColorScaleMarker[2];
+                    csMarker[0].Color = Colors.White;
+                    csMarker[0].Value = fMin;
+                    csMarker[1].Color = Colors.Black;
+                    csMarker[1].Value = fMax;
+                    csURMain.Markers.RemoveRange(0, 2);
+                    csURMain.Markers.AddRange(csMarker);
+                    #endregion
+
+                    UIData.bURChange = false;
+
+                }   // if (UIData.bURChange
+                #endregion
+
+                if (UIData.bURLeftActive)
+                    graphURLeft.Refresh();
+                if (UIData.bURTopActive)
+                    graphURTop.Refresh();
+                if (UIData.bURMainActive)
+                    graphURMain.Refresh();
 
                 #endregion  // UR
 
@@ -613,7 +722,10 @@ namespace nOCT
 
                 #region signal output
 
-                ;
+                if (UIData.bLROutput)
+                {
+                    graphLROutput.Refresh();
+                }
 
                 #endregion  // signal output
 
@@ -707,78 +819,17 @@ namespace nOCT
         private void btnLRConfigurationStart_Click(object sender, RoutedEventArgs e)
         {
 
-            #region structure sizes
-
-            switch (UIData.nLLSystemType)
-            {
-                case 0: // SD-OCT
-                    threadData.nRawNumberAlines = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;
-                    threadData.nRawAlineLength = UIData.nLLIMAQLineLength;
-                    threadData.pfProcess1DAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pfProcess1IMAQParallel = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2ADAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pfProcess2AIMAQParallel = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2ComplexRealParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.pfProcess2ComplexImagParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.nProcessedNumberAlines = threadData.nRawNumberAlines;
-                    threadData.nProcessedAlineLength = threadData.nRawAlineLength / 2;
-                    break;
-                case 1: // PS SD-OCT
-                    threadData.nRawNumberAlines = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;  // total number of even and odd for each camera (parallel and perpendicular)
-                    threadData.nRawAlineLength = UIData.nLLIMAQLineLength;
-                    threadData.pfProcess1DAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pfProcess1IMAQParallel = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess1IMAQPerpendicular = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2ADAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pfProcess2AIMAQParallel = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2AIMAQPerpendicular = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2ComplexRealParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.pfProcess2ComplexImagParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.pfProcess2ComplexRealPerpendicular = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.pfProcess2ComplexImagPerpendicular = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.nProcessedNumberAlines = threadData.nRawNumberAlines / 2;  // by combining even and odds
-                    threadData.nProcessedAlineLength = threadData.nRawAlineLength / 2;
-                    break;
-                case 2: // line field
-                    threadData.nRawNumberAlines = UIData.nLLIMAQLineLength;
-                    threadData.nRawAlineLength = UIData.nLLAlazarLineLength;  // using the alazar length even though acquisition will be on DAQ
-                    threadData.pfProcess1DAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pfProcess1IMAQParallel = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2ADAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pfProcess2AIMAQParallel = new float[threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2ComplexRealParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.pfProcess2ComplexImagParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.nProcessedNumberAlines = threadData.nRawNumberAlines;
-                    threadData.nProcessedAlineLength = threadData.nRawAlineLength / 2;
-                    break;
-                case 3: // OFDI
-                    threadData.nRawNumberAlines = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;  // will be two channels, each with this number of lines
-                    threadData.nRawAlineLength = UIData.nLLAlazarLineLength;
-                    threadData.pnProcess1Alazar     = new UInt16[threadData.nRawNumberAlines * UIData.nLLAlazarLineLength];  // threadData.nRawAlineLength];
-                    threadData.pnProcess1AlazarMZI  = new UInt16[threadData.nRawNumberAlines * UIData.nLLAlazarLineLength / 2];   //threadData.nRawAlineLength];
-                    threadData.pnProcess1AlazarOCT  = new UInt16[threadData.nRawNumberAlines * UIData.nLLAlazarLineLength / 2];   //threadData.nRawAlineLength];
-                    threadData.pfProcess1Alazar     = new float[threadData.nRawNumberAlines  * UIData.nLLAlazarLineLength];   //threadData.nRawAlineLength];
-                    threadData.pfProcess1AlazarMZI  = new float[threadData.nRawNumberAlines  * UIData.nLLAlazarLineLength / 2];    //threadData.nRawAlineLength];
-                    threadData.pfProcess1AlazarOCT  = new float[threadData.nRawNumberAlines  * UIData.nLLAlazarLineLength / 2];    //threadData.nRawAlineLength];
-                    threadData.pfProcess1DAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pnProcess2AAlazar = new UInt16[2 * threadData.nRawNumberAlines * threadData.nRawAlineLength];
-                    threadData.pfProcess2ADAQ = new float[4 * threadData.nRawNumberAlines];
-                    threadData.pfProcess2ComplexRealParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.pfProcess2ComplexImagParallel = new float[threadData.nProcessedNumberAlines * threadData.nProcessedAlineLength];
-                    threadData.nProcessedNumberAlines = threadData.nRawNumberAlines;
-                    threadData.nProcessedAlineLength = threadData.nRawAlineLength / 2;
-                    break;
-                case 4: // PS OFDI
-                    break;
-            }   // switch (UIData.nLLSystemType
-
-            #endregion  // structure sizes
-
             #region set up linked list
+
+            #region some local variables
 
             CDataNode datanode;
 
-            // clear linked list
+            #endregion some local variables
+
+
+            #region clear linked list
+
             while (nodeList.Count > 0)
             {
                 datanode = nodeList.Last();
@@ -786,28 +837,145 @@ namespace nOCT
                 datanode = null;
             }   // while (nodeList.Count
 
-            // create first node
+            #endregion clear linked list
+
+
+            #region create first node
+
             datanode = new CDataNode(UIData, 0);
             nodeList.AddLast(datanode);
             ulong nNodeSize = datanode.nSize;
 
-            // calculate number of nodes to create
+            #endregion create first node
+
+
+            #region create the rest of the node list
+
             for (int nID = 1; nID < UIData.nLLLinkedListLength; nID++)
             {
                 datanode = new CDataNode(UIData, nID);
                 nodeList.AddLast(datanode);
             }   // for (int nID
 
-            // update UI structures
+            #endregion create the rest of the node list
+
+
+            #region update UI structures
+
             UIData.pnLinkedList = new int[nodeList.Count, 8];
             Array.Clear(UIData.pnLinkedList, 0, UIData.pnLinkedList.Length);
             graphLRDiagnostics.DataSource = UIData.pnLinkedList;
             axisLRDiagnosticsHorizontal.Range = new Range<float>(0f, (float)(nodeList.Count));
             axisLRDiagnosticsVertical.Range = new Range<float>(0.5f, 7.5f);
 
-            #endregion  // set up linked list
+            #endregion update UI structures
 
-            #region set up threads
+            #endregion set up linked list
+
+
+            #region set up early graph structures
+
+            #region output tab
+
+            int nNumberFrames = UIData.nLLImagesPerVolume;
+            int nNumberLines = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;
+
+            UIData.pfOutput = new float[3, nNumberFrames * nNumberLines];
+            graphLROutput.DataSource = UIData.pfOutput;
+
+            #endregion output tab
+
+            #endregion set up early graph structures
+
+
+            #region process1 and process2 structures
+
+            switch (UIData.nLLSystemType)
+            {
+                case 0: // SD-OCT
+                    threadData.rwls1 = new ReaderWriterLockSlim();
+                    threadData.n1NumberCalibrationLines = 1;
+                    threadData.n1NumberInterferenceLinesPerCalibration = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;
+                    threadData.n1LineLength = UIData.nLLIMAQLineLength;
+                    threadData.pf1Calibration = new float[threadData.n1NumberCalibrationLines * threadData.n1LineLength];
+                    threadData.pf1Interference = new float[threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration * threadData.n1LineLength];
+                    threadData.pf1DAQ = new float[UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk];
+
+                    threadData.rwls2 = new ReaderWriterLockSlim();
+                    threadData.n2NumberSets = 1;
+                    threadData.n2NumberDepthProfilesPerSet = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;
+                    threadData.n2LineLength = threadData.n1LineLength >> 1;
+                    threadData.pf2Real = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2Imag = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2DAQ = new float[UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk];
+
+                    break;
+                case 1: // PS SD-OCT
+                    threadData.rwls1 = new ReaderWriterLockSlim();
+                    threadData.n1NumberCalibrationLines = 4;
+                    threadData.n1NumberInterferenceLinesPerCalibration = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk / 2;
+                    threadData.n1LineLength = UIData.nLLIMAQLineLength;
+                    threadData.pf1Calibration = new float[threadData.n1NumberCalibrationLines * threadData.n1LineLength];
+                    threadData.pf1Interference = new float[2 * threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration * threadData.n1LineLength];
+                    threadData.pf1DAQ = new float[threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration];
+
+                    threadData.rwls2 = new ReaderWriterLockSlim();
+                    threadData.n2NumberSets = 4;
+                    threadData.n2NumberDepthProfilesPerSet = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk / 2;
+                    threadData.n2LineLength = threadData.n1LineLength >> 1;
+                    threadData.pf2Real = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2Imag = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2DAQ = new float[UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk];
+
+                    // these two only exist for spectral binning code
+                    threadData.pf2Calibration = new float[threadData.n1NumberCalibrationLines * threadData.n1LineLength];
+                    threadData.pf2Interference = new float[threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration * threadData.n1LineLength];
+
+                    break;
+                case 2: // line field
+                    threadData.rwls1 = new ReaderWriterLockSlim();
+                    threadData.n1NumberCalibrationLines = 1;
+                    threadData.n1NumberInterferenceLinesPerCalibration = UIData.nLLIMAQLineLength;
+                    threadData.n1LineLength = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;
+                    threadData.pf1Calibration = new float[threadData.n1NumberCalibrationLines * threadData.n1LineLength];
+                    threadData.pf1Interference = new float[threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration * threadData.n1LineLength];
+                    threadData.pf1DAQ = new float[UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk];
+
+                    threadData.rwls2 = new ReaderWriterLockSlim();
+                    threadData.n2NumberSets = 1;
+                    threadData.n2NumberDepthProfilesPerSet = UIData.nLLIMAQLineLength;
+                    threadData.n2LineLength = threadData.n1LineLength >> 1;
+                    threadData.pf2Real = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2Imag = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2DAQ = new float[UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk];
+
+                    break;
+                case 3: // OFDI
+                    threadData.rwls1 = new ReaderWriterLockSlim();
+                    threadData.n1NumberCalibrationLines = 1;
+                    threadData.n1NumberInterferenceLinesPerCalibration = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;
+                    threadData.n1LineLength = UIData.nLLAlazarLineLength;
+                    threadData.pf1Calibration = new float[threadData.n1NumberCalibrationLines * threadData.n1LineLength];
+                    threadData.pf1Interference = new float[threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration * threadData.n1LineLength];
+                    threadData.pf1DAQ = new float[threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration];
+
+                    threadData.rwls2 = new ReaderWriterLockSlim();
+                    threadData.n2NumberSets = 1;
+                    threadData.n2NumberDepthProfilesPerSet = UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk;
+                    threadData.n2LineLength = threadData.n1LineLength >> 1;
+                    threadData.pf2Real = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2Imag = new float[threadData.n2NumberSets * threadData.n2NumberDepthProfilesPerSet * threadData.n2LineLength];
+                    threadData.pf2DAQ = new float[UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk];
+
+                    break;
+                case 4: // PS OFDI
+                    break;
+            }   // switch (UIData.nLLSystemType
+
+            #endregion  // process1 and process2 structures
+
+
+            #region set up main thread
 
             threadData.Initialize();
             threadData.threadMain = new Thread(MainThread);
@@ -815,47 +983,49 @@ namespace nOCT
             threadData.threadMain.Start();
             threadData.mreMainReady.WaitOne();
 
-            #endregion  // set up threads
+            #endregion set up main thread
+
 
             #region set up graphs
 
             #region UL
 
-            float fMin = 0, fMax = 1;
+            #region get min and max (with error checking)
+
+            float fMin = 0.0f;
+            float fMax = 1.0f;
+
             switch (UIData.nULDisplayIndex)
             {
-                case 0:
-                    fMin = UIData.fULAlazarMin;
-                    fMax = UIData.fULAlazarMax;
+                case 0:  // raw data
+                    fMin = UIData.fULRawDataMin;
+                    fMax = UIData.fULRawDataMax;
                     break;
-                case 1:
-                    fMin = UIData.fULDAQMin;
-                    fMax = UIData.fULDAQMax;
-                    break;
-                case 2:
-                    fMin = UIData.fULIMAQMin;
-                    fMax = UIData.fULIMAQMax;
-                    break;
-                case 3:
+                case 1:  // intensity
                     fMin = UIData.fULIntensityMin;
                     fMax = UIData.fULIntensityMax;
                     break;
-            }  // switch (UIData.nULDisplayIndex
+            }
 
-            UIData.pfULLeft = new float[4, threadData.nRawAlineLength];
+            if (fMax <= fMin)
+                fMax = fMin + 1.0f;
+
+            #endregion get min and max (with error checking)
+
+            UIData.pfULLeft = new float[4, threadData.n1LineLength];
             graphULLeft.DataSource = UIData.pfULLeft;
-            axisULLeftHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength - 1);
+            axisULLeftHorizontal.Range = new Range<int>(0, threadData.n1LineLength);
             axisULLeftVertical.Range = new Range<float>(fMin, fMax);
 
-            UIData.pfULTop = new float[1, threadData.nRawNumberAlines];
+            UIData.pfULTop = new float[1, threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration];
             graphULTop.DataSource = UIData.pfULTop;
-            axisULTopHorizontal.Range = new Range<int>(0, threadData.nRawNumberAlines - 1);
+            axisULTopHorizontal.Range = new Range<int>(0, threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration);
             axisULTopVertical.Range = new Range<float>(fMin, fMax);
 
-            UIData.pfULImage = new float[threadData.nRawNumberAlines, threadData.nRawAlineLength];
+            UIData.pfULImage = new float[threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration, threadData.n1LineLength];
             graphULMain.DataSource = UIData.pfULImage;
-            axisULMainVertical.Range = new Range<float>(0f, (float)(threadData.nRawAlineLength));
-            axisULMainHorizontal.Range = new Range<float>(0f, (float)(threadData.nRawNumberAlines));
+            axisULMainVertical.Range = new Range<float>(0f, (float)(threadData.n1LineLength));
+            axisULMainHorizontal.Range = new Range<float>(0f, (float)(threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration));
             ColorScaleMarker[] csMarker = new ColorScaleMarker[2];
             csMarker[0].Color = Colors.White;
             csMarker[0].Value = fMin;
@@ -868,92 +1038,88 @@ namespace nOCT
 
             #region UR
 
-            UIData.pfURLeft = new float[10, threadData.nProcessedAlineLength];
-            UIData.pfURTop = new float[10, threadData.nProcessedNumberAlines];
-            UIData.pfURImage = new float[threadData.nProcessedNumberAlines, threadData.nProcessedAlineLength];
+            switch (UIData.nURDisplayIndex)
+            {
+                case 0: // none
+                    break;
+                case 1: // int
+                    fMin = UIData.fURIntensityMin;
+                    fMax = UIData.fURIntensityMax;
+                    break;
+                case 2: // att
+                    break;
+                case 3: // ph
+                    break;
+                case 4: // pol
+                    break;
+                case 5: // ang
+                    break;
+                case 6: // ela
+                    break;
+                case 7: // spt
+                    break;
+                case 8: // SB
+                    break;
+            }  // switch (UIData.nURDisplayIndex
 
+            UIData.pfURLeft = new float[4, threadData.n2LineLength];
             graphURLeft.DataSource = UIData.pfURLeft;
-            axisURLeftHorizontal.Range = new Range<int>(0, threadData.nProcessedAlineLength - 1);
-            axisURLeftVertical.Range = new Range<float>(0.0f, 16384.0f);
+            axisURLeftHorizontal.Range = new Range<int>(0, threadData.n2LineLength);
+            axisURLeftVertical.Range = new Range<float>(fMin, fMax);
+
+            UIData.pfURTop = new float[1, threadData.n2NumberDepthProfilesPerSet];
             graphURTop.DataSource = UIData.pfURTop;
-            axisURTopHorizontal.Range = new Range<int>(0, threadData.nProcessedNumberAlines - 1);
-            axisURTopVertical.Range = new Range<float>(0.0f, 16384.0f);
+            axisURTopHorizontal.Range = new Range<int>(0, threadData.n2NumberDepthProfilesPerSet);
+            axisURTopVertical.Range = new Range<float>(fMin, fMax);
+
+            UIData.pfURImage = new float[threadData.n2NumberDepthProfilesPerSet, threadData.n2LineLength];
             graphURMain.DataSource = UIData.pfURImage;
+            axisURMainVertical.Range = new Range<float>(0f, (float)(threadData.n2LineLength));
+            axisURMainHorizontal.Range = new Range<float>(0f, (float)(threadData.n2NumberDepthProfilesPerSet));
+            csMarker = new ColorScaleMarker[2];
+            csMarker[0].Color = Colors.White;
+            csMarker[0].Value = fMin;
+            csMarker[1].Color = Colors.Black;
+            csMarker[1].Value = fMax;
+            csURMain.Markers.RemoveRange(0, 2);
+            csURMain.Markers.AddRange(csMarker);
 
             #endregion UR
 
             #region LR
 
-            #region output tab
-
-            UIData.pfOutput = new float[10, threadData.nRawNumberAlines * threadData.nRawAlineLength];
-
-            #endregion output tab
-
             #region processing tab
 
-            UIData.pfReference = new float[4, threadData.nRawAlineLength];
+            UIData.pfReference = new float[4, threadData.n1LineLength];
             graphReference.DataSource = UIData.pfReference;
-            axisReferenceHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength);
-            switch (UIData.nLLSystemType)
-            {
-                case 0: // SD-OCT
-                    fMin = UIData.fULIMAQMin;
-                    fMax = UIData.fULIMAQMax;
-                    break;
-                case 1: // PS SD-OCT
-                    fMin = UIData.fULIMAQMin;
-                    fMax = UIData.fULIMAQMax;
-                    break;
-                case 2: // line field
-                    break;
-                case 3: // OFDI
-                    fMin = UIData.fULAlazarMin;
-                    fMax = UIData.fULAlazarMax;
-                    break;
-                case 4: // PS OFDI
-                    break;
-            }
-            if (fMin >= fMax)
-                fMax = fMin + 1f;
+            axisReferenceHorizontal.Range = new Range<int>(0, threadData.n1LineLength);
+            fMin = UIData.fULRawDataMin;
+            fMax = UIData.fULRawDataMax;
+            if (fMax <= fMin)
+                fMax = fMin + 1.0f;
             axisReferenceVertical.Range = new Range<float>(fMin, fMax);
 
             #endregion processing tab
 
             #region calibration tab
 
-            UIData.pfCalibrationDepthProfile = new float[8, threadData.nRawAlineLength >> 1];
+            UIData.pfCalibrationDepthProfile = new float[8, threadData.n2LineLength];
             graphCalibrationDepthProfile.DataSource = UIData.pfCalibrationDepthProfile;
-            axisCalibrationDepthHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength >> 1);
+            axisCalibrationDepthHorizontal.Range = new Range<int>(0, threadData.n2LineLength);
             axisCalibrationDepthVertical.Range = new Range<float>(UIData.fULIntensityMin, UIData.fULIntensityMax);
 
-            UIData.pfCalibrationSpectrum = new float[8, threadData.nRawAlineLength];
+            UIData.pfCalibrationSpectrum = new float[8, threadData.n1LineLength];
             graphCalibrationSpectrum.DataSource = UIData.pfCalibrationSpectrum;
-            axisCalibrationSpectrumHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength);
-            switch (UIData.nLLSystemType)
-            {
-                case 0: // SD-OCT
-                    fMin = UIData.fULIMAQMin;
-                    fMax = UIData.fULIMAQMax;
-                    break;
-                case 1: // PS SD-OCT
-                    fMin = UIData.fULIMAQMin;
-                    fMax = UIData.fULIMAQMax;
-                    break;
-                case 2: // line field
-                    break;
-                case 3: // OFDI
-                    break;
-                case 4: // PS OFDI
-                    break;
-            }
+            axisCalibrationSpectrumHorizontal.Range = new Range<int>(0, threadData.n1LineLength);
+            fMin = UIData.fULRawDataMin;
+            fMax = UIData.fULRawDataMax;
             if (fMin >= fMax)
-                fMax = fMin + 1f;
+                fMax = fMin + 1.0f;
             axisCalibrationSpectrumVertical.Range = new Range<float>(fMin, fMax);
 
-            UIData.pfCalibrationPhase = new float[5, threadData.nRawAlineLength];
+            UIData.pfCalibrationPhase = new float[5, threadData.n1LineLength];
             graphCalibrationPhase.DataSource = UIData.pfCalibrationPhase;
-            axisCalibrationPhaseHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength);
+            axisCalibrationPhaseHorizontal.Range = new Range<int>(0, threadData.n1LineLength);
             axisCalibrationPhaseVertical.Range = new Range<float>(-1000f, 1000f);
 
             UIData.bCalibrationLoad = false;
@@ -964,38 +1130,23 @@ namespace nOCT
 
             #region dispersion tab
 
-            UIData.pfDispersionDepthProfile = new float[2, threadData.nRawAlineLength >> 1];
+            UIData.pfDispersionDepthProfile = new float[2, threadData.n1LineLength];
             graphDispersionDepthProfile.DataSource = UIData.pfDispersionDepthProfile;
-            axisDispersionDepthHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength >> 1);
+            axisDispersionDepthHorizontal.Range = new Range<int>(0, threadData.n2LineLength);
             axisDispersionDepthVertical.Range = new Range<float>(UIData.fULIntensityMin, UIData.fULIntensityMax);
 
-            UIData.pfDispersionSpectrum = new float[2, threadData.nRawAlineLength];
+            UIData.pfDispersionSpectrum = new float[2, threadData.n1LineLength];
             graphDispersionSpectrum.DataSource = UIData.pfDispersionSpectrum;
-            axisDispersionSpectrumHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength);
-            switch (UIData.nLLSystemType)
-            {
-                case 0: // SD-OCT
-                    fMin = UIData.fULIMAQMin;
-                    fMax = UIData.fULIMAQMax;
-                    break;
-                case 1: // PS SD-OCT
-                    fMin = UIData.fULIMAQMin;
-                    fMax = UIData.fULIMAQMax;
-                    break;
-                case 2: // line field
-                    break;
-                case 3: // OFDI
-                    break;
-                case 4: // PS OFDI
-                    break;
-            }
+            axisDispersionSpectrumHorizontal.Range = new Range<int>(0, threadData.n1LineLength);
+            fMin = UIData.fULRawDataMin;
+            fMax = UIData.fULRawDataMax;
             if (fMin >= fMax)
-                fMax = fMin + 1f;
+                fMax = fMin + 1.0f;
             axisDispersionSpectrumVertical.Range = new Range<float>(fMin, fMax);
 
-            UIData.pfDispersionPhase = new float[3, threadData.nRawAlineLength];
+            UIData.pfDispersionPhase = new float[3, threadData.n1LineLength];
             graphDispersionPhase.DataSource = UIData.pfDispersionPhase;
-            axisDispersionPhaseHorizontal.Range = new Range<int>(0, threadData.nRawAlineLength);
+            axisDispersionPhaseHorizontal.Range = new Range<int>(0, threadData.n1LineLength);
             axisDispersionPhaseVertical.Range = new Range<float>(-20f, 20f);
 
             UIData.bDispersionLoad = false;
@@ -1008,29 +1159,32 @@ namespace nOCT
 
             #endregion  // set up graphs
 
-            #region timeouts and computation type
 
-            int nDevice = UIData.nLLCUDADevice;
+            #region computation type
 
-            int nIPPExists = 0;
-            #if TRUEIPP
-            nIPPExists = 1;
-            #endif  // TRUEIPP
-
-            int nCUDAExists = 0;
-            #if TRUECUDA
-            nCUDAExists = 1;
-            #endif  // TRUECUDA
+            int nDevice = UIData.nComputationDevice;
 
             threadData.nProcess1ProcessingType = 0;  // NI is default
-            if ((nDevice - nIPPExists) == 0)
+
+            #if TRUEIPP
+            if (nDevice == 1)
                 threadData.nProcess1ProcessingType = 1;  // IPP
-            if (((nDevice - nIPPExists) > 0) && (nCUDAExists == 1))
+            #endif  // TRUEIPP
+
+            #if TRUECUDA
+            if (nDevice >= 2)
                 threadData.nProcess1ProcessingType = 2;  // CUDA
+            #endif  // TRUECUDA
+
+            #endregion computation type
+
+
+            #region timeouts
 
             threadData.nProcess1WriteTimeout = 500;  // milliseconds
 
-            #endregion  // timeout
+            #endregion timeouts
+
 
             #region set up dlls
 
@@ -1038,7 +1192,9 @@ namespace nOCT
 
             #endregion
 
+
             UIData.nConfigState = 1;
+
         }
 
 
@@ -1077,9 +1233,9 @@ namespace nOCT
 
         private void btnLROperationStart_Click(object sender, RoutedEventArgs e)
         {
-            #region threads
-                        threadData.mreMainRun.Set();
-            #endregion
+#region threads
+            threadData.mreMainRun.Set();
+#endregion
         }
 
 
@@ -1096,224 +1252,366 @@ namespace nOCT
             GC.Collect();
         }   // private void btnLRGCCollect_Click
 
+
         void MainThread()
         {
             #region initializing
-                        threadData.strMainThreadStatus = "Initializing...";
+            threadData.strMainThreadStatus = "Initializing...";
 
-                        // start other threads
-                        threadData.threadOutput = new Thread(OutputThread);
-                        threadData.threadOutput.Priority = ThreadPriority.Normal;
-                        threadData.threadOutput.Start();
+            // start other threads
+            threadData.threadOutput = new Thread(OutputThread);
+            threadData.threadOutput.Priority = ThreadPriority.Normal;
+            threadData.threadOutput.Start();
 
-                        threadData.threadAcquire = new Thread(AcquireThread);
-                        threadData.threadAcquire.Priority = ThreadPriority.Normal;
-                        threadData.threadAcquire.Start();
+            threadData.threadAcquire = new Thread(AcquireThread);
+            threadData.threadAcquire.Priority = ThreadPriority.Normal;
+            threadData.threadAcquire.Start();
 
-                        threadData.threadSave = new Thread(SaveThread);
-                        threadData.threadSave.Priority = ThreadPriority.Normal;
-                        threadData.threadSave.Start();
+            threadData.threadSave = new Thread(SaveThread);
+            threadData.threadSave.Priority = ThreadPriority.Normal;
+            threadData.threadSave.Start();
 
-                        threadData.threadProcess = new Thread(ProcessThread);
-                        threadData.threadProcess.Priority = ThreadPriority.Normal;
-                        threadData.threadProcess.Start();
+            threadData.threadProcess = new Thread(ProcessThread);
+            threadData.threadProcess.Priority = ThreadPriority.Normal;
+            threadData.threadProcess.Start();
 
-                        threadData.threadProcess1 = new Thread(Process1Thread);
-                        threadData.threadProcess1.Priority = ThreadPriority.Normal;
-                        threadData.threadProcess1.Start();
+            threadData.threadProcess1 = new Thread(Process1Thread);
+            threadData.threadProcess1.Priority = ThreadPriority.Normal;
+            threadData.threadProcess1.Start();
 
-                        threadData.threadProcess2 = new Thread(Process2Thread);
-                        threadData.threadProcess2.Priority = ThreadPriority.Normal;
-                        threadData.threadProcess2.Start();
+            threadData.threadProcess2 = new Thread(Process2Thread);
+            threadData.threadProcess2.Priority = ThreadPriority.Normal;
+            threadData.threadProcess2.Start();
 
-                        threadData.threadCleanup = new Thread(CleanupThread);
-                        threadData.threadCleanup.Priority = ThreadPriority.Normal;
-                        threadData.threadCleanup.Start();
+            threadData.threadCleanup = new Thread(CleanupThread);
+            threadData.threadCleanup.Priority = ThreadPriority.Normal;
+            threadData.threadCleanup.Start();
 
-                        // wait for threads
-                        threadData.mreOutputReady.WaitOne();
-                        threadData.mreAcquireReady.WaitOne();
-                        threadData.mreSaveReady.WaitOne();
-                        threadData.mreProcessReady.WaitOne();
-                        threadData.mreProcess1Ready.WaitOne();
-                        threadData.mreProcess2Ready.WaitOne();
-                        threadData.mreCleanupReady.WaitOne();
+            // wait for threads
+            threadData.mreOutputReady.WaitOne();
+            threadData.mreAcquireReady.WaitOne();
+            threadData.mreSaveReady.WaitOne();
+            threadData.mreProcessReady.WaitOne();
+            threadData.mreProcess1Ready.WaitOne();
+            threadData.mreProcess2Ready.WaitOne();
+            threadData.mreCleanupReady.WaitOne();
 
-                        // set up wait handles for starting
-                        WaitHandle[] pweStart = new WaitHandle[2];
-                        pweStart[0] = threadData.mreMainKill;
-                        pweStart[1] = threadData.mreMainRun;
-                        // set up wait handles for main loop
-                        WaitHandle[] pweLoop = new WaitHandle[2];
-                        pweLoop[0] = threadData.mreMainKill;
-                        pweLoop[1] = threadData.ssAcquireComplete.AvailableWaitHandle;
+            // set up wait handles for starting
+            WaitHandle[] pweStart = new WaitHandle[2];
+            pweStart[0] = threadData.mreMainKill;
+            pweStart[1] = threadData.mreMainRun;
+            // set up wait handles for main loop
+            WaitHandle[] pweLoop = new WaitHandle[2];
+            pweLoop[0] = threadData.mreMainKill;
+            pweLoop[1] = threadData.ssAcquireComplete.AvailableWaitHandle;
 
-                        // initialization complete
-                        threadData.mreMainReady.Set();
-                        threadData.strMainThreadStatus = "Ready!";
+            // initialization complete
+            threadData.mreMainReady.Set();
+            threadData.strMainThreadStatus = "Ready!";
             #endregion
 
             #region main loop
-                        threadData.strMainThreadStatus = "Set...";
-                        if (WaitHandle.WaitAny(pweStart) == 1)
-                        {
-                            threadData.mreOutputRun.Set();
-                            threadData.mreAcquireRun.Set();
-                            threadData.mreSaveRun.Set();
-                            threadData.mreProcessRun.Set();
-                            threadData.mreProcess1Run.Set();
-                            threadData.mreProcess2Run.Set();
-                            threadData.mreCleanupRun.Set();
+            threadData.strMainThreadStatus = "Set...";
+            if (WaitHandle.WaitAny(pweStart) == 1)
+            {
+                threadData.mreOutputRun.Set();
+                threadData.mreAcquireRun.Set();
+                threadData.mreSaveRun.Set();
+                threadData.mreProcessRun.Set();
+                threadData.mreProcess1Run.Set();
+                threadData.mreProcess2Run.Set();
+                threadData.mreCleanupRun.Set();
 
-                            threadData.strMainThreadStatus = "GO!";
+                threadData.strMainThreadStatus = "GO!";
 
-                            while (WaitHandle.WaitAny(pweLoop) != 0)
-                            {
-                                threadData.strMainThreadStatus = "waiting";
-                                threadData.ssAcquireComplete.Wait();
-                                threadData.strMainThreadStatus = "updating";
-                                threadData.mreCleanupAction.Set();
-                                Thread.Sleep(1);
-                            }
+                while (WaitHandle.WaitAny(pweLoop) != 0)
+                {
+                    threadData.strMainThreadStatus = "waiting";
+                    threadData.ssAcquireComplete.Wait();
+                    threadData.strMainThreadStatus = "updating";
+                    threadData.mreCleanupAction.Set();
+                    Thread.Sleep(1);
+                }
 
-                        }
+            }
             #endregion
 
             #region cleanup
-                        threadData.strMainThreadStatus = "Cleaning up...";
+            threadData.strMainThreadStatus = "Cleaning up...";
 
-                        // send kill command to other threads
-                        threadData.mreAcquireKill.Set();
-                        threadData.mreAcquireDead.WaitOne();
+            // send kill command to other threads
+            threadData.mreAcquireKill.Set();
+            threadData.mreAcquireDead.WaitOne();
 
-                        threadData.mreSaveKill.Set();
-                        threadData.mreSaveDead.WaitOne();
+            threadData.mreSaveKill.Set();
+            threadData.mreSaveDead.WaitOne();
 
-                        threadData.mreProcessKill.Set();
-                        threadData.mreProcessDead.WaitOne();
+            threadData.mreProcessKill.Set();
+            threadData.mreProcessDead.WaitOne();
 
-                        threadData.mreProcess1Kill.Set();
-                        threadData.mreProcess1Dead.WaitOne();
+            threadData.mreProcess1Kill.Set();
+            threadData.mreProcess1Dead.WaitOne();
 
-                        threadData.mreProcess2Kill.Set();
-                        threadData.mreProcess2Dead.WaitOne();
+            threadData.mreProcess2Kill.Set();
+            threadData.mreProcess2Dead.WaitOne();
 
-                        threadData.mreCleanupAction.Set();
-                        threadData.mreCleanupKill.Set();
-                        threadData.mreCleanupDead.WaitOne();
+            threadData.mreCleanupAction.Set();
+            threadData.mreCleanupKill.Set();
+            threadData.mreCleanupDead.WaitOne();
 
-                        // wait for threads to end
-                        threadData.mreOutputKill.Set();
-                        threadData.mreOutputDead.WaitOne();
+            // wait for threads to end
+            threadData.mreOutputKill.Set();
+            threadData.mreOutputDead.WaitOne();
 
-                        // all done
-                        threadData.mreMainDead.Set();
-                        threadData.strMainThreadStatus = "Done.";
+            // all done
+            threadData.mreMainDead.Set();
+            threadData.strMainThreadStatus = "Done.";
             #endregion
 
         }
 
+
         void OutputThread()
         {
             #region initializing
+
             threadData.strOutputThreadStatus = "Initializing...";
 
-
+            #region general variables
             // initialization
             double dLineTriggerRate = UIData.nLLLineRate;
-            int nNumberLines = 2048;
-            int nNumberFrames = 512;
+            int nNumberLinesPerChunk = UIData.nLLLinesPerChunk;
+            int nNumberChunksPerImage = UIData.nLLChunksPerImage;
+            int nFrame, nNumberFrames = UIData.nLLImagesPerVolume;
+            int nLine, nNumberLines = nNumberLinesPerChunk * nNumberChunksPerImage;
+            int nWFM, nWFMCtrLength = 2 * (nNumberFrames * nNumberLines + 1), nWFMDigLength = 2 * (nNumberFrames * nNumberLines + 1), nWFMAnaLength = nNumberFrames * nNumberLines;
+            int nIndex;
 
-            #if (TRUEDAQ)
-            // counter task
-            Task taskCtr = new Task();
-            taskCtr.COChannels.CreatePulseChannelFrequency("Dev1/ctr0", "ctrClock", COPulseFrequencyUnits.Hertz, COPulseIdleState.Low, 0.0, 2 * dLineTriggerRate, 0.5);
-            taskCtr.Timing.ConfigureImplicit(SampleQuantityMode.ContinuousSamples, 1000);
+            // get mode
+            int nMode = UIData.nLLSystemType;
+            // 0 : SD-OCT
+            // 1 : PS-OCT
+            // 2 : line field
+            // 3 : OFDI
+            // 4 : PS-OFDI
 
-            // digital task
+            #endregion general variables
+
+            #region counter task
+
+            #if TRUEDAQ
+
+            if (UIData.nOutputDigitalClockType == 0)
+            {
+                Task taskCtr = new Task();
+                taskCtr.COChannels.CreatePulseChannelFrequency("Dev1/ctr0", "ctrClock", COPulseFrequencyUnits.Hertz, COPulseIdleState.Low, 0.0, 2 * dLineTriggerRate, 0.5);
+                taskCtr.Timing.ConfigureImplicit(SampleQuantityMode.ContinuousSamples, nWFMCtrLength);
+            }   // if (UIData
+
+            #endif // TRUEDAQ
+
+            #endregion counter task
+
+            #region digital waveforms
+
+            DigitalWaveform[] digWFM = new DigitalWaveform[3];
+
+            #region line trigger
+            nWFM = 0;
+            digWFM[nWFM] = new DigitalWaveform(nWFMDigLength, 1);
+
+            digWFM[nWFM].Signals[0].States[0] = DigitalState.ForceDown;
+            digWFM[nWFM].Signals[0].States[1] = DigitalState.ForceDown;
+
+            for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
+            {
+                for (nLine=0; nLine < nNumberLines; nLine++)
+                {
+                    nIndex = nFrame * nNumberLines + nLine + 2;
+                    if (nLine % 2 == 0)
+                        digWFM[nWFM].Signals[0].States[nIndex] = DigitalState.ForceUp;
+                    else
+                        digWFM[nWFM].Signals[0].States[nIndex] = DigitalState.ForceDown;
+                }   // for (nLine
+            }   // for (nFrame
+
+            #endregion line trigger
+
+            #region frame trigger
+            nWFM = 1;
+            digWFM[nWFM] = new DigitalWaveform(nWFMDigLength, 1);
+
+            digWFM[nWFM].Signals[0].States[0] = DigitalState.ForceDown;
+            digWFM[nWFM].Signals[0].States[1] = DigitalState.ForceDown;
+
+            for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
+            {
+                for (nLine = 0; nLine < nNumberLines; nLine++)
+                {
+                    nIndex = nFrame * nNumberLines + nLine + 2;
+                    if (nLine == 0)
+                        digWFM[nWFM].Signals[0].States[nIndex] = DigitalState.ForceUp;
+                    else
+                        digWFM[nWFM].Signals[0].States[nIndex] = DigitalState.ForceDown;
+                }   // for (nLine
+            }   // for (nFrame
+
+            #endregion frame trigger
+
+            #region volume trigger
+            nWFM = 2;
+            digWFM[nWFM] = new DigitalWaveform(nWFMDigLength, 1);
+
+            digWFM[nWFM].Signals[0].States[0] = DigitalState.ForceUp;
+            digWFM[nWFM].Signals[0].States[1] = DigitalState.ForceDown;
+
+            for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
+            {
+                for (nLine = 0; nLine < nNumberLines; nLine++)
+                {
+                    nIndex = nFrame * nNumberLines + nLine + 2;
+                    digWFM[nWFM].Signals[0].States[nIndex] = DigitalState.ForceDown;
+                }   // for (nLine
+            }   // for (nFrame
+
+            #endregion volume trigger
+
+
+            #if TRUEDAQ
+
             Task taskDig = new Task();
             DigitalMultiChannelWriter digWriter = new DigitalMultiChannelWriter(taskDig.Stream);
             taskDig.DOChannels.CreateChannel("Dev1/port0/line0", "digLineTrigger", ChannelLineGrouping.OneChannelForEachLine);
             taskDig.DOChannels.CreateChannel("Dev1/port0/line1", "digFrameTrigger", ChannelLineGrouping.OneChannelForEachLine);
             taskDig.DOChannels.CreateChannel("Dev1/port0/line2", "digVolumeTrigger", ChannelLineGrouping.OneChannelForEachLine);
-            taskDig.Timing.ConfigureSampleClock("/Dev1/Ctr0InternalOutput", 2 * dLineTriggerRate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            if (UIData.nOutputDigitalClockType == 0)
+            {
+                taskDig.Timing.ConfigureSampleClock("/Dev1/Ctr0InternalOutput", 2 * dLineTriggerRate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            }   // if (UIData
+            else
+            {
+                // Axsun clock parameters needed here
+                taskDig.Timing.ConfigureSampleClock("/Dev1/PFI9", 2 * dLineTriggerRate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            }   // if (UIData
             taskDig.Control(TaskAction.Verify);
 
-            DigitalWaveform[] digWFM;
-            digWFM = new DigitalWaveform[3];
-            // line trigger
-            int i = 0, j, k;
-            digWFM[i] = new DigitalWaveform(nNumberFrames * 2 * nNumberLines, 1);
-            for (j = 0; j < nNumberFrames; j++)
-            {
-                for (k = 0; k < 2 * nNumberLines; k += 2)
-                {
-                    digWFM[i].Signals[0].States[j * 2 * nNumberLines + k] = DigitalState.ForceDown; // j * 2 * nNumberLines
-                    digWFM[i].Signals[0].States[j * 2 * nNumberLines + k + 1] = DigitalState.ForceUp;
-                }
-            }
-            // frame trigger
-            i = 1;
-            digWFM[i] = new DigitalWaveform(nNumberFrames * 2 * nNumberLines, 1);
-            for (j = 0; j < nNumberFrames; j++)
-            {
-                k = 0;
-                digWFM[i].Signals[0].States[j * 2 * nNumberLines + k] = DigitalState.ForceUp;
-                for (k = 1; k < 2 * nNumberLines; k++)
-                    digWFM[i].Signals[0].States[j * 2 * nNumberLines + k] = DigitalState.ForceDown;
-            }
-
-            // volume trigger
-            i = 2;
-            digWFM[i] = new DigitalWaveform(nNumberFrames * 2 * nNumberLines, 1);
-            for (j = 0; j < nNumberFrames; j++)
-                for (k = 1; k < 2 * nNumberLines; k++)
-                    digWFM[i].Signals[0].States[j * 2 * nNumberLines + k] = DigitalState.ForceDown;
-            digWFM[i].Signals[0].States[0] = DigitalState.ForceUp;
-            // write waveform
             digWriter.WriteWaveform(false, digWFM);
 
+            #endif // TRUEDAQ
 
-            // analog waveform
+            #endregion digital waveforms
+
+            #region analog waveforms
+
+            float f = UIData.fLLCenterX;
+            float[,] anaWFM = new float[3, nWFMAnaLength];
+
+            #region fast and slow axes
+
+            #region get variables from UI
+
+            float fCenterX = UIData.fLLCenterX;
+            float fCenterY = UIData.fLLCenterY;
+            float fRangeFast = UIData.fLLRangeFast;
+            float fRangeSlow = UIData.fLLRangeSlow;
+            float fCosAngle = (float)Math.Cos((Math.PI / 180.0) * UIData.fLLFastAngle);
+            float fSinAngle = (float)Math.Sin((Math.PI / 180.0) * UIData.fLLFastAngle);
+            int nDwellFast = UIData.nLLDwellFast;
+            int nDwellSlow = UIData.nLLDwellSlow;
+            int nRound = UIData.nLLRounding;
+
+            #endregion get variables from UI
+
+            float fXSlope = fRangeFast / ((nNumberLines - nRound) / nDwellFast - 1);
+            float fXOffset = -0.5f * fRangeFast;
+            float fYSlope = fRangeSlow / (nNumberFrames / nDwellSlow - 1);
+            float fYOffset = -0.5f * fRangeSlow;
+            float fX, fY;
+
+            #region initial WFM calculation
+
+            for (nFrame=0; nFrame<nNumberFrames; nFrame++)
+            {
+                fY = fYSlope * (nFrame / nDwellSlow) + fYOffset;
+                for (nLine=0; nLine < nNumberLines - nRound; nLine++)
+                {
+                    fX = fXSlope * (nLine / nDwellSlow) + fXOffset;
+
+                    nIndex = nFrame * nNumberLines + nLine;
+                    anaWFM[0, nIndex] = fCenterX + fX * fCosAngle - fY * fSinAngle;
+                    anaWFM[1, nIndex] = fCenterY + fY * fCosAngle + fX * fSinAngle;
+                }   // for (nLine
+            }   // for (nFrame
+
+            #endregion initial WFM calculation
+
+            #region round edges
+
+            float[] pfRound = new float[nRound];
+            for (nLine = 0; nLine < nRound; nLine++)
+                pfRound[nLine] = (float)(0.5 * (1.0 - Math.Cos(Math.PI * ((double)nLine) / ((double)nRound))));
+
+            for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
+            {
+                fXOffset = anaWFM[0, (nFrame + 1) * nNumberLines - nRound - 1];
+                fYOffset = anaWFM[1, (nFrame + 1) * nNumberLines - nRound - 1];
+                if (nFrame == nNumberFrames - 1)
+                {
+                    fXSlope = anaWFM[0, 0] - fXOffset;
+                    fYSlope = anaWFM[1, 0] - fYOffset;
+                }
+                else // if (nFrame
+                {
+                    fXSlope = anaWFM[0, (nFrame + 1) * nNumberLines] - fXOffset;
+                    fYSlope = anaWFM[1, (nFrame + 1) * nNumberLines] - fYOffset;
+                }   // if (nFrame
+                for (nLine = nNumberLines - nRound; nLine < nNumberLines; nLine++)
+                {
+                    nIndex = nFrame * nNumberLines + nLine;
+                    anaWFM[0, nIndex] = fXSlope * pfRound[nLine - (nNumberLines - nRound)] + fXOffset;
+                    anaWFM[1, nIndex] = fYSlope * pfRound[nLine - (nNumberLines - nRound)] + fYOffset;
+                }   // for (nLine
+            }   // for (nFrame
+
+            #endregion round edges
+
+            #endregion fast and slow axes
+
+            #region polarization modulator
+
+            float fPolModLow = UIData.fLLPolModLow;
+            float fPolModHigh = UIData.fLLPolModHigh;
+
+            for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
+                for (nLine = 0; nLine < nNumberLines; nLine++)
+                    if (nLine % 2 == 0)
+                        anaWFM[2, nFrame * nNumberLines + nLine] = fPolModLow;
+                    else
+                        anaWFM[2, nFrame * nNumberLines + nLine] = fPolModHigh;
+
+            #endregion polarization modulator
+
+            #if TRUEDAQ
+
             Task taskAna = new Task();
             AnalogMultiChannelWriter anaWriter = new AnalogMultiChannelWriter(taskAna.Stream);
             taskAna.AOChannels.CreateVoltageChannel("Dev1/ao0", "anaGalvoFast", -5.0, +5.0, AOVoltageUnits.Volts);
             taskAna.AOChannels.CreateVoltageChannel("Dev1/ao1", "anaGalvoSlow", -5.0, +5.0, AOVoltageUnits.Volts);
             taskAna.AOChannels.CreateVoltageChannel("Dev1/ao2", "anaPolMod", -5.0, +5.0, AOVoltageUnits.Volts);
             taskAna.Timing.ConfigureSampleClock("/Dev1/PFI7", dLineTriggerRate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
-
-
-            double[,] anaWFM = new double[3, nNumberFrames * nNumberLines];
-            // fast galvo
-            i = 0;
-            for (j = 0; j < nNumberFrames; j++)
-            {
-                for (k = 0; k < nNumberLines; k++)
-                {
-                    anaWFM[i, j * nNumberLines + k] = (1.0 * k) / (0.5 * nNumberLines) * 2.0;
-                }
-            }
-            // slow galvo
-            i = 1;
-            for (j = 0; j < nNumberFrames; j++)
-            {
-                for (k = 0; k < nNumberLines; k++)
-                {
-                    anaWFM[i, j * nNumberLines + k] = (1.0 * j) / (0.5 * nNumberLines) * 2.0;
-                }
-            }
-            // pol mod
-            i = 2;
-            for (j = 0; j < nNumberFrames; j++)
-            {
-                for (k = 0; k < nNumberLines; k += 2)
-                {
-                    anaWFM[i, j * nNumberLines + k] = -1.0;
-                    anaWFM[i, j * nNumberLines + k + 1] = 1.0;
-                }
-            }
             anaWriter.WriteMultiSample(false, anaWFM);
-            #endif
+
+            #endif // TRUEDAQ
+
+            #endregion analog waveforms
+
+            #region update graph
+
+            Buffer.BlockCopy(anaWFM, 0, UIData.pfOutput, 0, anaWFM.Length * sizeof(float));
+            
+            #endregion update graph
+
+            #region handles
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
@@ -1324,71 +1622,141 @@ namespace nOCT
             pweLoop[0] = threadData.mreOutputKill;
             pweLoop[1] = threadData.mreOutputUpdate;
 
+            #endregion handles
+
             // initialization complete
             threadData.mreOutputReady.Set();
             threadData.strOutputThreadStatus = "Ready!";
-            #endregion
+
+            #endregion initializing
+
 
             #region main loop
+
             threadData.strOutputThreadStatus = "Set...";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
                 threadData.strOutputThreadStatus = "GO!";
 
-#if (TRUEDAQ)
+                #if (TRUEDAQ)
                 // start tasks
                 taskCtr.Start();
                 taskDig.Control(TaskAction.Start);
                 taskAna.Control(TaskAction.Start);
-#endif
+                #endif  // TRUEDAQ
 
                 while (WaitHandle.WaitAny(pweLoop) == 1)
                 {
                     threadData.mreOutputUpdate.Reset();
                     threadData.strOutputThreadStatus = "updating...";
 
-#if (TRUEDAQ)
-                    // fast galvo
-                    i = 0;
-                    for (j = 0; j < nNumberFrames; j++)
+                    #region fast and slow axes
+
+                    #region get variables from UI
+
+                    fCenterX = UIData.fLLCenterX;
+                    fCenterY = UIData.fLLCenterY;
+                    fRangeFast = UIData.fLLRangeFast;
+                    fRangeSlow = UIData.fLLRangeSlow;
+                    fCosAngle = (float)Math.Cos((Math.PI / 180.0) * UIData.fLLFastAngle);
+                    fSinAngle = (float)Math.Sin((Math.PI / 180.0) * UIData.fLLFastAngle);
+                    nDwellFast = UIData.nLLDwellFast;
+                    nDwellSlow = UIData.nLLDwellSlow;
+                    nRound = UIData.nLLRounding;
+
+                    #endregion get variables from UI
+
+                    fXSlope = fRangeFast / ((nNumberLines - nRound) / nDwellFast - 1);
+                    fXOffset = -0.5f * fRangeFast;
+                    fYSlope = fRangeSlow / (nNumberFrames / nDwellSlow - 1);
+                    fYOffset = -0.5f * fRangeSlow;
+
+                    #region initial WFM calculation
+
+                    for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
                     {
-                        for (k = 0; k < nNumberLines; k++)
+                        fY = fYSlope * (nFrame / nDwellSlow) + fYOffset;
+                        for (nLine = 0; nLine < nNumberLines - nRound; nLine++)
                         {
-                            anaWFM[i, j * nNumberLines + k] = (1.0 * k) / (0.5 * nNumberLines) * 2.0;
-                        }
-                    }
-                    // slow galvo
-                    i = 1;
-                    for (j = 0; j < nNumberFrames; j++)
+                            fX = fXSlope * (nLine / nDwellSlow) + fXOffset;
+
+                            nIndex = nFrame * nNumberLines + nLine;
+                            anaWFM[0, nIndex] = fCenterX + fX * fCosAngle - fY * fSinAngle;
+                            anaWFM[1, nIndex] = fCenterY + fY * fCosAngle + fX * fSinAngle;
+                        }   // for (nLine
+                    }   // for (nFrame
+
+                    #endregion initial WFM calculation
+
+                    #region round edges
+
+                    pfRound = new float[nRound];
+                    for (nLine = 0; nLine < nRound; nLine++)
+                        pfRound[nLine] = (float)(0.5 * (1.0 - Math.Cos(Math.PI * ((double)nLine) / ((double)nRound))));
+
+                    for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
                     {
-                        for (k = 0; k < nNumberLines; k++)
+                        fXOffset = anaWFM[0, (nFrame + 1) * nNumberLines - nRound - 1];
+                        fYOffset = anaWFM[1, (nFrame + 1) * nNumberLines - nRound - 1];
+                        if (nFrame == nNumberFrames - 1)
                         {
-                            anaWFM[i, j * nNumberLines + k] = (1.0 * j) / (0.5 * nNumberLines) * 2.0;
+                            fXSlope = anaWFM[0, 0] - fXOffset;
+                            fYSlope = anaWFM[1, 0] - fYOffset;
                         }
-                    }
-                    // pol mod
-                    i = 2;
-                    for (j = 0; j < nNumberFrames; j++)
-                    {
-                        for (k = 0; k < nNumberLines; k += 2)
+                        else // if (nFrame
                         {
-                            anaWFM[i, j * nNumberLines + k] = -1.0;
-                            anaWFM[i, j * nNumberLines + k + 1] = 1.0;
-                        }
-                    }
+                            fXSlope = anaWFM[0, (nFrame + 1) * nNumberLines] - fXOffset;
+                            fYSlope = anaWFM[1, (nFrame + 1) * nNumberLines] - fYOffset;
+                        }   // if (nFrame
+                        for (nLine = nNumberLines - nRound; nLine < nNumberLines; nLine++)
+                        {
+                            nIndex = nFrame * nNumberLines + nLine;
+                            anaWFM[0, nIndex] = fXSlope * pfRound[nLine - (nNumberLines - nRound)] + fXOffset;
+                            anaWFM[1, nIndex] = fYSlope * pfRound[nLine - (nNumberLines - nRound)] + fYOffset;
+                        }   // for (nLine
+                    }   // for (nFrame
+
+                    #endregion round edges
+
+                    #endregion fast and slow axes
+
+                    #region polarization modulator
+
+                    fPolModLow = UIData.fLLPolModLow;
+                    fPolModHigh = UIData.fLLPolModHigh;
+
+                    for (nFrame = 0; nFrame < nNumberFrames; nFrame++)
+                        for (nLine = 0; nLine < nNumberLines; nLine++)
+                            if (nLine % 2 == 0)
+                                anaWFM[2, nFrame * nNumberLines + nLine] = fPolModLow;
+                            else
+                                anaWFM[2, nFrame * nNumberLines + nLine] = fPolModHigh;
+
+                    #endregion polarization modulator
+
+                    #if (TRUEDAQ)
                     anaWriter.BeginWriteMultiSample(false, anaWFM, null, null);
-#endif
+                    #endif
+
+                    #region update graph
+
+                    Buffer.BlockCopy(anaWFM, 0, UIData.pfOutput, 0, anaWFM.Length * sizeof(float));
+
+                    #endregion update graph
 
                     threadData.strOutputThreadStatus = "idle...";
                 }
             }
-            #endregion
+
+            #endregion main loop
+
 
             #region cleanup
+
             threadData.strOutputThreadStatus = "Cleaning up...";
 
-#if (TRUEDAQ)
-            // clean up code
+            #if (TRUEDAQ)
+
             taskAna.Control(TaskAction.Stop);
             taskDig.Control(TaskAction.Stop);
             taskCtr.Stop();
@@ -1396,13 +1764,16 @@ namespace nOCT
             taskAna.Dispose();
             taskDig.Dispose();
             taskCtr.Dispose();
-#endif
+
+            #endif  // TRUEDAQ
 
             threadData.mreOutputDead.Set();
             threadData.strOutputThreadStatus = "Done.";
-            #endregion
+
+            #endregion cleanup
 
         }
+
 
         void AcquireThread()
         {
@@ -1592,378 +1963,14 @@ namespace nOCT
         }  // void AcquireThread
 
 
-        static public bool ConfigureAlazarBoard(IntPtr boardHandle)
+        void AcquireAlazarThread()
         {
-            UInt32 retCode;
-
-            double samplesPerSec = 1000000000.0;
-            UInt32 sampleRateId = AlazarAPI.SAMPLE_RATE_1000MSPS;
-
-            retCode =
-                AlazarAPI.AlazarSetCaptureClock(
-                    boardHandle,
-                    AlazarAPI.INTERNAL_CLOCK,
-                    sampleRateId,
-                    AlazarAPI.CLOCK_EDGE_RISING,
-                    0
-                    );
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-
-            retCode = AlazarAPI.AlazarInputControlEx(boardHandle,
-                                           AlazarAPI.CHANNEL_A,
-                                           AlazarAPI.DC_COUPLING,
-                                           AlazarAPI.INPUT_RANGE_PM_400_MV,
-                                           AlazarAPI.IMPEDANCE_50_OHM);
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-
-            retCode = AlazarAPI.AlazarInputControlEx(boardHandle,
-                                           AlazarAPI.CHANNEL_B,
-                                           AlazarAPI.DC_COUPLING,
-                                           AlazarAPI.INPUT_RANGE_PM_400_MV,
-                                           AlazarAPI.IMPEDANCE_50_OHM);
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-
-            retCode =
-                AlazarAPI.AlazarSetTriggerOperation(
-                    boardHandle,
-                    AlazarAPI.TRIG_ENGINE_OP_J,
-                    AlazarAPI.TRIG_ENGINE_J,
-                    AlazarAPI.TRIG_EXTERNAL,
-                    AlazarAPI.TRIGGER_SLOPE_POSITIVE,
-                    150,
-                    AlazarAPI.TRIG_ENGINE_K,
-                    AlazarAPI.TRIG_DISABLE,
-                    AlazarAPI.TRIGGER_SLOPE_POSITIVE,
-                    128);
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-
-            retCode =
-                AlazarAPI.AlazarSetExternalTrigger(
-                    boardHandle,
-                    AlazarAPI.DC_COUPLING,
-                    AlazarAPI.ETR_2V5);
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-
-            double triggerDelay_sec = 0;
-            UInt32 triggerDelay_samples = (UInt32)(triggerDelay_sec * samplesPerSec + 0.5);
-            retCode =
-                AlazarAPI.AlazarSetTriggerDelay(
-                    boardHandle,
-                    triggerDelay_samples
-                    );
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-
-            double triggerTimeout_sec = 0;
-            UInt32 triggerTimeout_clocks = (UInt32)(triggerTimeout_sec / 10E-6 + 0.5);
-
-            retCode =
-                AlazarAPI.AlazarSetTriggerTimeOut(
-                    boardHandle,
-                    triggerTimeout_clocks
-                    );
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-
-            retCode =
-                AlazarAPI.AlazarConfigureAuxIO(
-                   boardHandle, AlazarAPI.AUX_OUT_TRIGGER, 0);
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        struct ByteToShortArray
-        {
-            // Use this structure to access a byte array as a short array,
-            // without making an intermediate copy in memory.
-            [FieldOffset(0)]
-            public byte[] bytes;
-
-            [FieldOffset(0)]
-            public short[] shorts;
-        }
-
-        public unsafe bool AcquireAlazarData(IntPtr boardHandle)
-        {
-            UInt32 preTriggerSamples = 1050;
-            UInt32 postTriggerSamples = 8192 - preTriggerSamples;
-
-            UInt32 recordsPerBuffer = (UInt32)UIData.nLLLinesPerChunk; //256;
-            UInt32 buffersPerAcquisition = (UInt32)UIData.nLLChunksPerImage; //8;
-
-            UInt32 channelMask = AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B;
-
-            // Calculate the number of enabled channels from the channel mask
-            UInt32 channelCount = 0;
-            switch (channelMask)
-            {
-                case AlazarAPI.CHANNEL_A:
-                case AlazarAPI.CHANNEL_B:
-                    channelCount = 1;
-                    break;
-                case AlazarAPI.CHANNEL_A | AlazarAPI.CHANNEL_B:
-                    channelCount = 2;
-                    break;
-                default:
-                    return false;
-            }
-
-            // Get the sample size in bits, and the on-board memory size in samples per channel
-            Byte bitsPerSample;
-            UInt32 maxSamplesPerChannel;
-            UInt32 retCode = AlazarAPI.AlazarGetChannelInfo(boardHandle, &maxSamplesPerChannel, &bitsPerSample);
-            if (retCode != AlazarAPI.ApiSuccess)
-            {
-                return false;
-            }
-
-            // Calculate the size of each DMA buffer in bytes
-
-            UInt32 bytesPerSample = ((UInt32)bitsPerSample + 7) / 8;
-            UInt32 samplesPerRecord = preTriggerSamples + postTriggerSamples;
-            UInt32 bytesPerRecord = (bytesPerSample * samplesPerRecord);
-            UInt32 bytesPerBuffer = bytesPerRecord * recordsPerBuffer * channelCount;
-
-            bool success = true;
-
-            ushort[] output = new ushort[bytesPerBuffer * buffersPerAcquisition /4]; // /2]; // 1ushort per 2bytes, so ushort[] output should be 1/2 bytesPerAcquisition
-
-            try
-            {
-                // Allocate memory for sample buffer
-                byte[] buffer = new byte[bytesPerBuffer]; 
-
-                //// Cast byte array to short array
-                ByteToShortArray byteToShortArray = new ByteToShortArray();
-                byteToShortArray.bytes = buffer;
-
-                fixed (short* pBuffer = byteToShortArray.shorts)
-                {
-
-                    // Configure the record size
-
-                    retCode =
-                        AlazarAPI.AlazarSetRecordSize(
-                            boardHandle,
-                            preTriggerSamples,
-                            postTriggerSamples
-                            );
-                    if (retCode != AlazarAPI.ApiSuccess)
-                    {
-                        throw new System.Exception("Error: AlazarSetRecordSize failed -- " + AlazarAPI.AlazarErrorToText(retCode));
-                    }
-
-                    // Configure the board to make an NPT AutoDMA acquisition
-
-                    UInt32 recordsPerAcquisition = recordsPerBuffer * buffersPerAcquisition;
-
-                    retCode =
-                        AlazarAPI.AlazarBeforeAsyncRead(
-                            boardHandle,
-                            channelMask,
-                            -(int)preTriggerSamples,
-                            samplesPerRecord,
-                            recordsPerBuffer,
-                            recordsPerAcquisition,
-                            AlazarAPI.ADMA_EXTERNAL_STARTCAPTURE | AlazarAPI.ADMA_NPT | AlazarAPI.ADMA_FIFO_ONLY_STREAMING | AlazarAPI.ADMA_ALLOC_BUFFERS
-                            );
-                    if (retCode != AlazarAPI.ApiSuccess)
-                    {
-                        throw new System.Exception("Error: AlazarBeforeAsyncRead failed -- " + AlazarAPI.AlazarErrorToText(retCode));
-                    }
-
-                    // Arm the board to begin the acquisition
-
-                    retCode = AlazarAPI.AlazarStartCapture(boardHandle);
-                    if (retCode != AlazarAPI.ApiSuccess)
-                    {
-                        throw new System.Exception("Error: AlazarStartCapture failed -- " +
-                            AlazarAPI.AlazarErrorToText(retCode));
-                    }
-
-                    // Wait for each buffer to be filled, then process the buffer
-
-                    int startTickCount = System.Environment.TickCount;
-
-                    UInt32 buffersCompleted = 0;
-                    Int64 bytesTransferred = 0;
-                    
-                    int bufferCount = 0;
-                    bool done = false;
-                    while (!done)
-                    {
-                        // TODO: Set a buffer timeout that is longer than the time
-                        //       required to capture all the records in one buffer.
-
-                        UInt32 timeout_ms = 5000;
-
-                        // Wait for a buffer to be filled by the board.
-
-                        retCode = AlazarAPI.AlazarWaitNextAsyncBufferComplete(boardHandle, pBuffer, bytesPerBuffer, timeout_ms);
-                        if (retCode == AlazarAPI.ApiSuccess)
-                        {
-                            // This buffer is full, but there are more buffers in the acquisition.
-                        }
-                        else if (retCode == AlazarAPI.ApiTransferComplete)
-                        {
-                            // This buffer is full, and it's the last buffer of the acqusition.
-                            done = true;
-                        }
-                        else
-                        {
-                            throw new System.Exception("Error: AlazarWaitNextAsyncBufferComplete failed -- " +
-                                AlazarAPI.AlazarErrorToText(retCode));
-                        }
-
-                        // Copy buffer-acquisition to linked list node
-                        //Array.Copy(buffer, threadData.nodeAcquire.Value.pnAlazar[nChunk], buffer.Length);
-                        Buffer.BlockCopy(buffer, 0, output, bufferCount * (int)bytesPerBuffer, buffer.Length);
-                        bufferCount++;
-
-                        buffersCompleted++;
-                        bytesTransferred += bytesPerBuffer;
-
-                        #region NOTE: acquisition characteristics
-                        // While you are processing this buffer, the board is already
-                        // filling the next available buffer(s).
-                        //
-                        // You MUST finish processing this buffer and post it back to the
-                        // board before the board fills all of the available DMA buffers,
-                        // and its on-board memory.
-                        //
-                        // Samples are arranged in the buffer as follows: S0A, S0B, ..., S1A, S1B, ...
-                        // with SXY the sample number X of channel Y.
-                        //
-                        // A 12-bit sample code is stored in the most significant bits
-                        // of
-                        // in each 16-bit sample value.
-                        //
-                        // Sample codes are unsigned by default. As a result:
-                        // - a sample code of 0x0000 represents a negative full scale
-                        // input signal.
-                        // - a sample code of 0x8000 represents a ~0V signal.
-                        // - a sample code of 0xFFFF represents a positive full scale
-                        // input signal.
-                        #endregion NOTE: acquisition characteristics
-
-                        if (buffersCompleted >= buffersPerAcquisition)
-                        {
-                            done = true;
-                        }
-
-                        // Display progress
-                        //Console.Write("Completed {0} buffers\r", buffersCompleted);
-                    }
-
-                    
-                    #region validate AcquireAlazarData
-                    /*
-                    string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\control.bin";
-                    FileStream fs = File.Open(strFilename, FileMode.Create);
-                    BinaryWriter binWriter = new BinaryWriter(fs);
-
-                    fs.Seek(0, SeekOrigin.Begin);
-                    for (int mPoint = 0; mPoint < output.Length; mPoint++)
-                        binWriter.Write(output[mPoint]);
-                    fs.Close();
-                    */
-                    #endregion validate AcquireAlazarData
-
-                    #region blit to linked-list node
-                    for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++) {
-                        Array.Copy(output, 
-                            nChunk * threadData.nodeAcquire.Value.pnAlazar[nChunk].Length, 
-                            threadData.nodeAcquire.Value.pnAlazar[nChunk], 
-                            0, 
-                            threadData.nodeAcquire.Value.pnAlazar[nChunk].Length);
-                    }
-                    #endregion blit to linked-list node
-
-                    // Results
-                    double transferTime_sec = ((double)(System.Environment.TickCount - startTickCount)) / 1000;
-                    UInt32 recordsTransferred = recordsPerBuffer * buffersCompleted;
-                }
-            }
-            catch (Exception exception)
-            {
-                //Console.WriteLine(exception.ToString());
-                success = false;
-            }
-            finally
-            {
-                // Abort the acquisition
-                retCode = AlazarAPI.AlazarAbortAsyncRead(boardHandle);
-                if (retCode != AlazarAPI.ApiSuccess)
-                {
-                    ;
-                }
-            }
-
-            Console.ReadLine();
-            return success;
-        }
-
-        unsafe void AcquireAlazarThread()
-        {
-            #region initializing
+#region initializing
             threadData.strAcquireAlazarThreadStatus = "i";
 
             // initialization
             bool bTroublemaker = false;
             int nMode = -1;
-            UInt32 retCode;
-
-            #region get Alazar board handle
-            UInt32 systemId = 1;
-            UInt32 boardId = 1;
-            IntPtr handle = AlazarAPI.AlazarGetBoardBySystemID(systemId, boardId);
-            if (handle == IntPtr.Zero)
-            {
-                //Console.WriteLine("Error: Open board {0}:{1} failed.", systemId, boardId);
-                string message = "Error: AlazarGetBoardBySystemID failed--";
-                System.Windows.MessageBox.Show(message,
-                    "Alazar error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-            #endregion get Alazar board handle
-
-            #region configure Alazar board
-            ConfigureAlazarBoard(handle);
-            #endregion configure Alazar board
-
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
@@ -1998,36 +2005,31 @@ namespace nOCT
 
             threadData.mreAcquireAlazarReady.Set();
             threadData.strAcquireAlazarThreadStatus = "r";
-            #endregion
+#endregion
 
-            #region main loop
+#region main loop
             threadData.strAcquireAlazarThreadStatus = "s";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
                 threadData.strAcquireAlazarThreadStatus = "g";
                 while (threadData.mreAcquireAlazarKill.WaitOne(0) == false)
                 {
-
                     nStatus = WaitHandle.WaitAny(pweLoop, 10000);
-                    if (nStatus == 0) // nStatus==0 indicates threadData.mreAcquireAlazarKill was set
+                    if (nStatus == 0)
                     {
-                        AlazarAPI.AlazarAbortAsyncRead(handle); // Abort the acquisition and release resources, must be called after acquisition.
-                                                                // kill
+                        // kill
                     }  // if (nStatus
-
-                    if (nStatus == 1) //nStatus == 1 indicates threadData.mreAcquireNodeReady was set
+                    if (nStatus == 1)
                     {
                         threadData.areAcquireAlazarGo.Set();
                         threadData.strAcquireAlazarThreadStatus = "G";
                         if (nMode > 0)
                         {
-                            if (threadData.nSystemActual == 0) // threadData.nSystemActual==0 denotes OFDI
+                            if (threadData.nSystemActual == 0)
                             {
                                 threadData.strAcquireAlazarThreadStatus = "Wa";
-
-                                #region Acquire Alazar Data
-                                AcquireAlazarData(handle);
-                                #endregion Acquire Alazar Data
+                                ; // real acquisition
+                                Thread.Sleep(1);
                             }
                             else
                             {
@@ -2049,9 +2051,9 @@ namespace nOCT
                     }  // if (nStatus
                 }  // while (threadData.mreAcquireAlazarKill.WaitOne
             }  // if (WaitHandle.WaitAny
-            #endregion
+#endregion
 
-            #region cleanup
+#region cleanup
             if (bTroublemaker)
             {
                 threadData.mreAcquireAlazarDead.Set();
@@ -2070,9 +2072,10 @@ namespace nOCT
 #endregion
         }
 
+
         void AcquireDAQThread()
         {
-            #region initializing
+#region initializing
             threadData.strAcquireDAQThreadStatus = "i";
 
             // initialization
@@ -2112,7 +2115,7 @@ namespace nOCT
             threadData.strAcquireDAQThreadStatus = "r";
 #endregion
 
-            #region main loop
+#region main loop
             threadData.strAcquireDAQThreadStatus = "s";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
@@ -2158,7 +2161,7 @@ namespace nOCT
             }  // if (WaitHandle.WaitAny
 #endregion
 
-            #region cleanup
+#region cleanup
             if (bTroublemaker)
             {
                 threadData.mreAcquireDAQDead.Set();
@@ -2177,14 +2180,16 @@ namespace nOCT
 #endregion
         }
 
+
         void AcquireIMAQThread()
         {
             #region initializing
             threadData.strAcquireIMAQThreadStatus = "i";
 
+            #region thread structures
+
             // initialization
             bool bTroublemaker = false;
-            int nMode = -1;
 
             // set up wait handles to start
             WaitHandle[] pweStart = new WaitHandle[2];
@@ -2196,7 +2201,12 @@ namespace nOCT
             pweLoop[1] = threadData.mreAcquireNodeReady;
             int nStatus;
 
-            // initialization complete
+            #endregion thread structures
+
+            #region acquisition mode
+
+            int nMode = -1;
+
             switch (UIData.nLLSystemType)
             {
                 case 0: // SD-OCT
@@ -2215,6 +2225,8 @@ namespace nOCT
                     nMode = 0;
                     break;
             }
+
+            #endregion acquisition mode
 
             #if TRUEIMAQ
 
@@ -2302,34 +2314,34 @@ namespace nOCT
                             {
                                 threadData.strAcquireIMAQThreadStatus = "Wd";
                                 // read from file
-                                var byteBuffer = new byte[threadData.nRawNumberAlines * threadData.nRawAlineLength * sizeof(Int16)];
+                                var byteBuffer = new byte[UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk * UIData.nLLIMAQLineLength * sizeof(Int16)];
                                 switch (threadData.nodeAcquire.Value.nNodeID % 5)
                                 {
                                     case 0:
-//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH1.bin");
-                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102561.bin");
+                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH1.bin");
+//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102561.bin");
                                         break;
                                     case 1:
-//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH2.bin");
-                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102562.bin");
+                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH2.bin");
+//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102562.bin");
                                         break;
                                     case 2:
-//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH3.bin");
-                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102563.bin");
+                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH3.bin");
+//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102563.bin");
                                         break;
                                     case 3:
-//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH4.bin");
-                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102564.bin");
+                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH4.bin");
+//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102564.bin");
                                         break;
                                     case 4:
-//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH5.bin");
-                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102565.bin");
+                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdH5.bin");
+//                                        byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Parallel_20201223_PSOCT_Calibration_102565.bin");
                                         break;
                                 }
                                 if (UIData.nLLChunksPerImage > 0)
                                 {
                                     for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
-                                        Buffer.BlockCopy(byteBuffer, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength * sizeof(Int16), threadData.nodeAcquire.Value.pnIMAQParallel[nChunk], 0, threadData.nodeAcquire.Value.pnIMAQParallel[nChunk].Length * sizeof(Int16));
+                                        Buffer.BlockCopy(byteBuffer, nChunk * UIData.nLLLinesPerChunk * UIData.nLLIMAQLineLength * sizeof(Int16), threadData.nodeAcquire.Value.pnIMAQParallel[nChunk], 0, threadData.nodeAcquire.Value.pnIMAQParallel[nChunk].Length * sizeof(Int16));
                                     threadData.strAcquireIMAQThreadStatus = "Wd";
                                 }   // if (nChunk
 
@@ -2338,34 +2350,34 @@ namespace nOCT
                                     switch (threadData.nodeAcquire.Value.nNodeID % 5)
                                     {
                                         case 0:
-//                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV1.bin");
-                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102561.bin");
+                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV1.bin");
+//                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102561.bin");
                                             break;
                                         case 1:
-                                            //byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV2.bin");
-                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102562.bin");
+                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV2.bin");
+//                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102562.bin");
                                             break;
                                         case 2:
-                                            //byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV3.bin");
-                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102563.bin");
+                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV3.bin");
+//                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102563.bin");
                                             break;
                                         case 3:
-                                            //byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV4.bin");
-                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102564.bin");
+                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV4.bin");
+//                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102564.bin");
                                             break;
                                         case 4:
-                                            //byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV5.bin");
-                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102565.bin");
+                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\image\\pdV5.bin");
+//                                            byteBuffer = File.ReadAllBytes("C:\\Users\\hylep\\Desktop\\nOCT\\PSdata\\calibration\\Perpendicular_20201223_PSOCT_Calibration_102565.bin");
                                             break;
                                     }
                                     if (UIData.nLLChunksPerImage > 0)
                                     {
                                         for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
-                                            Buffer.BlockCopy(byteBuffer, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength * sizeof(Int16), threadData.nodeAcquire.Value.pnIMAQPerpendicular[nChunk], 0, threadData.nodeAcquire.Value.pnIMAQPerpendicular[nChunk].Length * sizeof(Int16));
+                                            Buffer.BlockCopy(byteBuffer, nChunk * UIData.nLLLinesPerChunk * UIData.nLLIMAQLineLength * sizeof(Int16), threadData.nodeAcquire.Value.pnIMAQPerpendicular[nChunk], 0, threadData.nodeAcquire.Value.pnIMAQPerpendicular[nChunk].Length * sizeof(Int16));
                                     }   // if (nChunk
                                 }   // if (nMode
 
-                                Thread.Sleep((int)(1000 * threadData.nRawNumberAlines / UIData.nLLLineRate));
+                                Thread.Sleep((int)(1000 * UIData.nLLChunksPerImage * UIData.nLLLinesPerChunk / UIData.nLLLineRate));
 
                             }   // if (threadData.nSystemActual
                         }
@@ -2414,6 +2426,7 @@ namespace nOCT
             // call functon to stop cameras and clean ring buffers
         }
 
+
         void SaveThread()   // 20201208 editing 
         {
             #region initializing
@@ -2428,11 +2441,10 @@ namespace nOCT
             Thread.Sleep(1);
             string strTest;
             int nOffset1 = 4096;
-            int nOffset2;
+            int nOffset2; 
 
             // parameters for saving 
             UInt16[][] pnAlazar;
-
             double[] pnDAQ;
             Int16[] pnIMAQ; 
             Int16[] pnIMAQParallel;
@@ -2453,22 +2465,6 @@ namespace nOCT
             // PS-SD-OCT
             pnIMAQParallel = new Int16[nNumberLines * nLineLength];
             pnIMAQPerpendicular = new Int16[nNumberLines * nLineLength];
-
-            // OFDI
-            #region assign pnAlazar outside switch to fix downstream scoping issue
-            pnAlazar = new UInt16[UIData.nLLChunksPerImage][];
-            nChannels = 0;
-            if (UIData.bLLAlazarCh1 == true)
-                nChannels++;
-            if (UIData.bLLAlazarCh2 == true)
-                nChannels++;
-            for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
-            {
-                pnAlazar[nChunk] = new UInt16[nChannels * nLinesPerChunk * nLineLength];
-                Array.Clear(pnAlazar[nChunk], 0, pnAlazar[nChunk].Length);
-            } // for nChunk
-            Array.Clear(pnDAQ, 0, pnDAQ.Length);
-            #endregion
 
             switch (UIData.nLLSystemType)
             {
@@ -2492,7 +2488,6 @@ namespace nOCT
                     if (UIData.bLLAlazarCh2 == true)
                         nChannels++;
                     pnAlazar = new UInt16[nNumberChunks][];
-
                     for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
                     {
                         pnAlazar[nChunk] = new UInt16[nChannels * nLinesPerChunk * nLineLength];  // 2 - MZI + OCT
@@ -2543,37 +2538,33 @@ namespace nOCT
                             threadData.nSaveNodeID = nodeSave.Value.nNodeID;                            
                             if (nodeSave.Value.bRecord)
                             {
-                                
-
                                 // actual save
                                 // Thread.Sleep(600);
                                 FileStream fs = File.Open(nodeSave.Value.strFilename, FileMode.Create);
                                 BinaryWriter binWriter = new BinaryWriter(fs);
                                 strTest = nodeSave.Value.strFilename;   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
-
                                 switch (UIData.nLLSystemType)
                                 {
                                     case 0: // SD-OCT
-                                        #region SD-OCT
                                         strTest = "nFrameNumber=" + nodeSave.Value.nFramePosition + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nNumberDataArrays=" + 2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nNumberDataArrays=" + 2 + ";";       binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
                                         // header array 1: IMAQ data (parallel and perpendicular)
-                                        strTest = "strVar='pdIMAQ';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset1 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length); binWriter.Write
-                                         (strTest);
-                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "strDataType='int16';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strVar='pdIMAQ';";                   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset1 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length);    binWriter.Write
+                                            (strTest);
+                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strDataType='int16';";               binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
                                         // header array 2: DAQ data
                                         nOffset2 = nOffset1 + nNumberLines * nLineLength * sizeof(Int16);   // two cameras
-                                        strTest = "strVar='pdDAQ';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + 4 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);     // Need double check
-                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "strDataType='double';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strVar='pdDAQ';";                    binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset2 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + 4 + ";";            binWriter.Write(strTest.Length);    binWriter.Write(strTest);     // Need double check
+                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strDataType='double';";              binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
                                         strTest = "END"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
 
@@ -2581,34 +2572,33 @@ namespace nOCT
                                         fs.Seek(nOffset1, SeekOrigin.Begin);
 
                                         for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
-                                            Array.Copy(nodeSave.Value.pnIMAQ[nChunk], 0, pnIMAQ, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);
+                                            Array.Copy(nodeSave.Value.pnIMAQ[nChunk], 0, pnIMAQ, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);                                          
 
                                         for (int nLine = 0; nLine < nNumberLines; nLine++)
                                             for (int nPoint = 0; nPoint < nLineLength; nPoint++)
                                                 binWriter.Write(pnIMAQ[nLine * nLineLength + nPoint]);
-                                        #endregion
+
                                         break;
                                     case 1: // PS-SD-OCT
-                                        #region PS-SD-OCT
-                                        strTest = "nFrameNumber=" + nodeSave.Value.nFramePosition + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nNumberDataArrays=" + 2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "nFrameNumber=" + nodeSave.Value.nFramePosition + ";";    binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nNumberDataArrays=" + 2 + ";";       binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
                                         // header array 1: IMAQ data (parallel and perpendicular)
-                                        strTest = "strVar='pdIMAQx2';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset1 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "strDataType='int16';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strVar='pdIMAQx2';";                 binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset1 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + nNumberLines + ";"; binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strDataType='int16';";               binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
                                         // header array 2: DAQ data
                                         nOffset2 = nOffset1 + 2 * nNumberLines * nLineLength * sizeof(Int16);   // two cameras
-                                        strTest = "strVar='pdDAQ';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nOffset=" + nOffset2 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "nNumberLines=" + 4 + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);     // Need double check
-                                        strTest = "nLineLength=" + nLineLength + ";"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
-                                        strTest = "strDataType='double';"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "strVar='pdDAQ';";                    binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nOffset=" + nOffset2 + ";";          binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "nNumberLines=" + 4 + ";";            binWriter.Write(strTest.Length);    binWriter.Write(strTest);     // Need double check
+                                        strTest = "nLineLength=" + nLineLength + ";";   binWriter.Write(strTest.Length);    binWriter.Write(strTest);
+                                        strTest = "strDataType='double';";              binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
-                                        strTest = "END"; binWriter.Write(strTest.Length); binWriter.Write(strTest);
+                                        strTest = "END"; binWriter.Write(strTest.Length);    binWriter.Write(strTest);
 
                                         // save array 1: IMAQ data (parallel and perpendicular)
                                         fs.Seek(nOffset1, SeekOrigin.Begin);
@@ -2618,28 +2608,22 @@ namespace nOCT
                                             Array.Copy(nodeSave.Value.pnIMAQParallel[nChunk], 0, pnIMAQParallel, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);
                                             Array.Copy(nodeSave.Value.pnIMAQPerpendicular[nChunk], 0, pnIMAQPerpendicular, nChunk * nLinesPerChunk * nLineLength, nLinesPerChunk * nLineLength);
 
-                                        }
-                                        for (int nLine = 0; nLine < nNumberLines; nLine++)
+                                        }   
+                                        for(int nLine = 0; nLine < nNumberLines; nLine++)
                                         {
                                             for (int nPoint = 0; nPoint < nLineLength; nPoint++)
                                             {
                                                 binWriter.Write(pnIMAQParallel[nLine * nLineLength + nPoint]);
                                                 binWriter.Write(pnIMAQPerpendicular[nLine * nLineLength + nPoint]);
                                             }
-                                        }
-                                        #endregion
+                                        } 
+
                                         break;
                                     case 2: // line field
 
                                         break;
                                     case 3: // OFDI (pgreg002 here is a section to see how the arrays are defined in each node
-                                        fs.Seek(0, SeekOrigin.Begin);
-                                        for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
-                                            Array.Copy(nodeSave.Value.pnAlazar[nChunk], 0, pnAlazar[nChunk], 0, nLinesPerChunk * nLineLength);
-
-                                        for (int nChunk = 0; nChunk < nNumberChunks; nChunk++)
-                                            for (int nPoint = 0; nPoint < nLinesPerChunk * nLineLength; nPoint++)
-                                                binWriter.Write(pnAlazar[nChunk][nPoint]);
+                                        
                                         break;
                                     case 4: // PS-OFDI
 
@@ -2687,23 +2671,23 @@ namespace nOCT
             }  // if (WaitHandle.WaitAny
             #endregion
 
-            #region cleanup
+#region cleanup
             if (bTroublemaker)
             {
                 threadData.mreSaveDead.Set();
             }
             else
             {  // if (bTroublemaker
-            #region cleanup
+#region cleanup
                 threadData.strSaveThreadStatus = "Cleaning up...";
                 // clean up code
                 ;
                 // signal other threads
                 threadData.mreSaveDead.Set();
                 threadData.strSaveThreadStatus = "Done.";
-            #endregion
+#endregion
             }  // if (bTroublemaker
-            #endregion
+#endregion
 
         }   // void SaveThread
 
@@ -2711,14 +2695,43 @@ namespace nOCT
         void ProcessThread()
         {
 
-            #region initializing
+            #region  initializing
+
             threadData.strProcessThreadStatus = "Initializing...";
 
-            // define variables used in main loop
+            #region variables for traversing linked list
+
             bool bTroublemaker = false;
             LinkedListNode<CDataNode> nodeProcess;
             nodeProcess = nodeList.First;
-            int nAline, nPoint, nAlinePoint, nChunkPoint;
+
+            #endregion variables for traversing linked list
+
+            #region variables for copying data from node to process1 structures
+
+            int nChunk, nNumberChunks = UIData.nLLChunksPerImage;
+            int nLine, nNumberLinesPerChunk = UIData.nLLLinesPerChunk;
+            int nPoint, nLineLength = threadData.n1LineLength, nLineSize = nLineLength * sizeof(float);
+
+            int nSection;
+            float[] pfLine = new float[threadData.n1LineLength];
+            int nSumLines;
+            float[] pfSum = new float[threadData.n1LineLength];
+            switch (UIData.nLLSystemType)
+            {
+                case 0:  // SD-OCT
+                    break;
+                case 1:  // PS-OCT
+                    break;
+                case 2:  // line field
+                    break;
+                case 3:  // OFDI
+                    break;
+            }
+
+            #endregion variables for copying data from node to process1 structures
+
+            #region wait handles for loops
 
             // set up wait handles to start main loop
             WaitHandle[] pweStart = new WaitHandle[2];
@@ -2730,11 +2743,13 @@ namespace nOCT
             pweLoop[0] = threadData.mreProcessKill;
             pweLoop[1] = threadData.ssProcessAction.AvailableWaitHandle;
 
+            #endregion wait handles for loops
+
             // initialization complete
             threadData.mreProcessReady.Set();
             threadData.strProcessThreadStatus = "Ready!";
 
-            #endregion  // initializing
+            #endregion  initializing
 
             #region main loop
 
@@ -2770,380 +2785,232 @@ namespace nOCT
                         }  // if (nodeProcess.Value.rwls.TryEnterReadLock
                     }  // while (threadData.ssProcessAction.CurrentCount
 
-                    #endregion  // search for most recent acquired node, mark others along the way
+                    #endregion  search for most recent acquired node, mark others along the way
 
                     #region work on most recent acquired node
+
                     threadData.strProcessThreadStatus = "at correct node (" + threadData.ssProcessAction.CurrentCount + ")!";
                     threadData.ssProcessAction.Wait();
                     if (nodeProcess.Value.rwls.TryEnterReadLock(1) == true)
                     {
                         threadData.strProcessThreadStatus = "processing (" + threadData.ssProcessAction.CurrentCount + ")!";
-                        if (threadData.rwlsProcessTo1.TryEnterWriteLock(1) == true)
+                        if (threadData.rwls1.TryEnterWriteLock(1) == true)
                         {
                             threadData.nProcessNode = nodeProcess.Value.nNodeID;
+                            threadData.strProcessThreadStatus = "processing (" + threadData.ssProcessAction.CurrentCount + ")!";
 
                             #region copy data arrays in node to process1 buffers
+
                             switch (UIData.nLLSystemType)
                             {
                                 case 0: // SD-OCT
-                                    #region SD-OCT
                                     threadData.strProcessThreadStatus = "processingXXX (" + threadData.ssProcessAction.CurrentCount + ")!";
-                                    if (UIData.nLLChunksPerImage > 0)
+                                    threadData.strProcessThreadStatus = "processingYYY (" + nodeProcess.Value.nNodeID + ")!";
+
+                                    #region convert from int to float while extracting calibration line
+
+                                    nSection = 0;
+                                    nSumLines = 0;
+                                    Array.Clear(pfSum, 0, threadData.n1LineLength);
+                                    for (nChunk = 0; nChunk < nNumberChunks; nChunk++)
                                     {
-                                        #region copy DAQ data
-                                        Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
-                                        #endregion
-                                        #region copy IMAQ data and convert from int to float
-                                        for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
+                                        for (nLine = 0; nLine < nNumberLinesPerChunk; nLine++)
                                         {
-                                            Array.Copy(nodeProcess.Value.pnIMAQParallel[nChunk], 0, threadData.pfProcess1IMAQParallel, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, UIData.nLLLinesPerChunk * threadData.nRawAlineLength);
-                                        }   // for (int nChunk
-                                        #endregion
-                                    }   // if (UIData.nLLChunksPerImage
+                                            Array.Copy(nodeProcess.Value.pnIMAQParallel[nChunk], nLine * nLineLength, pfLine, 0, nLineLength);  // int to float while copying to pfLine
+                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();  // update sum line
+                                            Buffer.BlockCopy(pfLine, 0, threadData.pf1Interference, (nSection * threadData.n1NumberInterferenceLinesPerCalibration + nSumLines) * nLineLength * sizeof(float), nLineLength * sizeof(float));  // copy pfLine to interference buffer
+                                            nSumLines++;  // update number of lines
+                                        }   // for (nAline
+                                    }   // for (nChunk
+                                    for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                        threadData.pf1Calibration[nSection * nLineLength + nPoint] = pfSum[nPoint] / ((float)nSumLines);  // copy to calibration line while dividing sum by number
+
+                                    #endregion convert from int to float while extracting calibration line
+
+                                    #region copy DAQ data
+
+//                                    Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pf1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
+
+                                    #endregion  copy DAQ data
+
                                     break;
-                                    #endregion SD-OCT
                                 case 1: // PS SD-OCT
-                                    #region PS SD-OCT
                                     threadData.strProcessThreadStatus = "processingXXX (" + threadData.ssProcessAction.CurrentCount + ")!";
-                                    if (UIData.nLLChunksPerImage > 0)
+                                    threadData.strProcessThreadStatus = "processingYYY (" + nodeProcess.Value.nNodeID + ")!";
+
+                                    #region parallel even: convert from int to float while extracting calibration line
+                                    nSection = 0;
+                                    nSumLines = 0;
+                                    Array.Clear(pfSum, 0, threadData.n1LineLength);
+                                    for (nChunk = 0; nChunk < nNumberChunks; nChunk++)
                                     {
-                                        #region copy DAQ data
-                                        Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
-                                        #endregion
-                                        #region copy IMAQ data and convert from int to float
-                                        for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
+                                        for (nLine = 0; nLine < nNumberLinesPerChunk; nLine += 2)
                                         {
-                                            // copy parallel in order
-                                            Array.Copy(nodeProcess.Value.pnIMAQParallel[nChunk], 0, threadData.pfProcess1IMAQParallel, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength,  UIData.nLLLinesPerChunk * threadData.nRawAlineLength);
-                                            // copy and flip perpendicular camera
-                                            for (nAline = 0; nAline < UIData.nLLLinesPerChunk; nAline++)
-                                            {
-                                                nAlinePoint = (nChunk * UIData.nLLLinesPerChunk + nAline) * threadData.nRawAlineLength;
-                                                nChunkPoint = nAline * threadData.nRawAlineLength;
-                                                for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                    threadData.pfProcess1IMAQPerpendicular[nAlinePoint + nPoint] = nodeProcess.Value.pnIMAQPerpendicular[nChunk][nChunkPoint + (threadData.nRawAlineLength - 1 - nPoint)];
-                                            }   // for (nAline
-                                        }   // for (int nChunk
-                                        #endregion
-                                    }   // if (UIData.nLLChunksPerImage
+                                            Array.Copy(nodeProcess.Value.pnIMAQParallel[nChunk], nLine * nLineLength, pfLine, 0, nLineLength);  // int to float while copying to pfLine
+                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();  // update sum line
+                                            Buffer.BlockCopy(pfLine, 0, threadData.pf1Interference, (nSection * threadData.n1NumberInterferenceLinesPerCalibration + nSumLines) * nLineLength * sizeof(float), nLineLength * sizeof(float));  // copy pfLine to interference buffer
+                                            nSumLines++;  // update number of lines
+                                        }   // for (nAline
+                                    }   // for (nChunk
+                                    for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                        threadData.pf1Calibration[nSection * nLineLength + nPoint] = pfSum[nPoint] / ((float)nSumLines);  // copy to calibration line while dividing sum by number
+                                    #endregion parallel even: convert from int to float while extracting calibration line
+
+                                    #region parallel odd: convert from int to float while extracting calibration line
+                                    nSection = 1;
+                                    nSumLines = 0;
+                                    Array.Clear(pfSum, 0, threadData.n1LineLength);
+                                    for (nChunk = 0; nChunk < nNumberChunks; nChunk++)
+                                    {
+                                        for (nLine = 1; nLine < nNumberLinesPerChunk; nLine += 2)
+                                        {
+                                            Array.Copy(nodeProcess.Value.pnIMAQParallel[nChunk], nLine * nLineLength, pfLine, 0, nLineLength);  // int to float while copying to pfLine
+                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();  // update sum line
+                                            Buffer.BlockCopy(pfLine, 0, threadData.pf1Interference, (nSection * threadData.n1NumberInterferenceLinesPerCalibration + nSumLines) * nLineLength * sizeof(float), nLineLength * sizeof(float));  // copy pfLine to interference buffer
+                                            nSumLines++;  // update number of lines
+                                        }   // for (nAline
+                                    }   // for (nChunk
+                                    for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                        threadData.pf1Calibration[nSection * nLineLength + nPoint] = pfSum[nPoint] / ((float)nSumLines);  // copy to calibration line while dividing sum by number
+                                    #endregion parallel odd: convert from int to float while extracting calibration line
+
+                                    #region perpendicular even: convert from int to float while extracting calibration line
+                                    nSection = 2;
+                                    nSumLines = 0;
+                                    Array.Clear(pfSum, 0, threadData.n1LineLength);
+                                    for (nChunk = 0; nChunk < nNumberChunks; nChunk++)
+                                    {
+                                        for (nLine = 0; nLine < nNumberLinesPerChunk; nLine += 2)
+                                        {
+                                            for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                                pfLine[nLineLength - 1 - nPoint] = nodeProcess.Value.pnIMAQPerpendicular[nChunk][nLine * nLineLength + nPoint];
+                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();  // update sum line
+                                            Buffer.BlockCopy(pfLine, 0, threadData.pf1Interference, (nSection * threadData.n1NumberInterferenceLinesPerCalibration + nSumLines) * nLineLength * sizeof(float), nLineLength * sizeof(float));  // copy pfLine to interference buffer
+                                            nSumLines++;  // update number of lines
+                                        }   // for (nAline
+                                    }   // for (nChunk
+                                    for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                        threadData.pf1Calibration[nSection * nLineLength + nPoint] = pfSum[nPoint] / ((float)nSumLines);  // copy to calibration line while dividing sum by number
+                                    #endregion perpendicular even: convert from int to float while extracting calibration line
+
+                                    #region perpendicular odd: convert from int to float while extracting calibration line
+                                    nSection = 3;
+                                    nSumLines = 0;
+                                    Array.Clear(pfSum, 0, threadData.n1LineLength);
+                                    for (nChunk = 0; nChunk < nNumberChunks; nChunk++)
+                                    {
+                                        for (nLine = 1; nLine < nNumberLinesPerChunk; nLine += 2)
+                                        {
+                                            for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                                pfLine[nLineLength - 1 - nPoint] = nodeProcess.Value.pnIMAQPerpendicular[nChunk][nLine * nLineLength + nPoint];
+                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();  // update sum line
+                                            Buffer.BlockCopy(pfLine, 0, threadData.pf1Interference, (nSection * threadData.n1NumberInterferenceLinesPerCalibration + nSumLines) * nLineLength * sizeof(float), nLineLength * sizeof(float));  // copy pfLine to interference buffer
+                                            nSumLines++;  // update number of lines
+                                        }   // for (nAline
+                                    }   // for (nChunk
+                                    for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                                        threadData.pf1Calibration[nSection * nLineLength + nPoint] = pfSum[nPoint] / ((float)nSumLines);  // copy to calibration line while dividing sum by number
+                                    #endregion perpendicular odd: convert from int to float while extracting calibration line
+
+                                    #region copy DAQ data
+
+//                                    Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
+
+                                    #endregion copy DAQ data
+
                                     break;
-                                #endregion PS SD-OCT
                                 case 2: // line field
-                                    #region line field
-                                    if (UIData.nLLChunksPerImage > 0)
-                                    {
-                                        Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
-                                        for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
-                                        {
-//                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * 2 * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnAlazar[nChunk].Length);
-                                            Buffer.BlockCopy(nodeProcess.Value.pnIMAQParallel[nChunk], 0, threadData.pfProcess1IMAQParallel, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnIMAQParallel[nChunk].Length);
-//                                            Buffer.BlockCopy(nodeProcess.Value.pnIMAQPerpendicular[nChunk], 0, threadData.pnProcess1IMAQPerpendicular, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength, nodeProcess.Value.pnIMAQPerpendicular[nChunk].Length);
-                                        }   // for (int nChunk
-                                    }   // if (UIData.nLLChunksPerImage
+
                                     break;
-                                #endregion line field
                                 case 3: // OFDI
-                                    #region OFDI
-                                    if (UIData.nLLChunksPerImage > 0)
-                                    {
-                                        #region copy DAQ data
-                                        Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
-                                        #endregion
 
-                                        #region copy Alazar data
-                                        for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage/2; nChunk++)
-                                        {
-                                            Array.Copy(nodeProcess.Value.pnAlazar[nChunk], 
-                                                0, 
-                                                threadData.pnProcess1Alazar, 
-                                                nChunk * nodeProcess.Value.pnAlazar[nChunk].Length, 
-                                                nodeProcess.Value.pnAlazar[nChunk].Length);
-                                            //Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * UIData.nLLAlazarLineLength, nodeProcess.Value.pnAlazar[nChunk].Length);
-                                        }   // for (int nChunk
-                                        #endregion
-
-                                        #region bitshift Alazar data down
-                                        for (int n = 0; n < threadData.pnProcess1Alazar.Length; n++)
-                                            threadData.pnProcess1Alazar[n] = (ushort)(threadData.pnProcess1Alazar[n] >> 4);
-                                        #endregion bitshift Alazar data down
-
-                                        #region separate interleaved Alazar data
-                                        int destinationIndex = 0;
-                                        for (int sourceIndex = 0; sourceIndex < threadData.pnProcess1Alazar.Length; sourceIndex++)
-                                        {
-                                            if (sourceIndex % 2 == 0) threadData.pnProcess1AlazarOCT[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
-                                            if (sourceIndex % 2 == 1)
-                                            {
-                                                threadData.pnProcess1AlazarMZI[destinationIndex] = threadData.pnProcess1Alazar[sourceIndex];
-                                                destinationIndex++;
-                                            }
-                                        }
-                                        #endregion separate interleaved Alazar data
-
-                                        #region convert to unsigned-integers to floats
-                                        Array.Copy(threadData.pnProcess1Alazar,     threadData.pfProcess1Alazar,    threadData.pnProcess1Alazar.Length);
-                                        Array.Copy(threadData.pnProcess1AlazarOCT,  threadData.pfProcess1AlazarOCT, threadData.pnProcess1AlazarOCT.Length);
-                                        Array.Copy(threadData.pnProcess1AlazarMZI,  threadData.pfProcess1AlazarMZI, threadData.pnProcess1AlazarMZI.Length);
-                                        #endregion convert to unsigned-integers to floats
-                                    }   // if (UIData.nLLChunksPerImage
                                     break;
-                                #endregion OFDI
                                 case 4: // PS OFDI
-                                    #region PS OFDI
-                                    if (UIData.nLLChunksPerImage > 0)
-                                    {
-                                        #region copy DAQ data
-                                        Buffer.BlockCopy(nodeProcess.Value.pfDAQ, 0, threadData.pfProcess1DAQ, 0, nodeProcess.Value.pfDAQ.Length);
-                                        #endregion
-                                        #region copy Alazar data
-                                        for (int nChunk = 0; nChunk < UIData.nLLChunksPerImage; nChunk++)
-                                        {
-                                            Buffer.BlockCopy(nodeProcess.Value.pnAlazar[nChunk], 0, threadData.pnProcess1Alazar, nChunk * UIData.nLLLinesPerChunk * threadData.nRawAlineLength * 2, nodeProcess.Value.pnAlazar[nChunk].Length * 2);
-                                        }   // for (int nChunk
-                                        #endregion
-                                    }   // if (UIData.nLLChunksPerImage
+
                                     break;
-                                    #endregion PS OFDI
                             }   // switch (UIData.nLLSystemType
-                            #endregion  // copy data arrays from node to process1 buffers
+
+                            #endregion  copy data arrays from node to process1 buffers
+
+                            #region mark and release node
 
                             nodeProcess.Value.nProcessed = 1;
-                            threadData.rwlsProcessTo1.ExitWriteLock();
+                            nodeProcess.Value.rwls.ExitReadLock();
+
+                            #endregion mark and release node
+
+                            #region release process1 write lock and signal process1 thread
+
+                            threadData.rwls1.ExitWriteLock();
                             threadData.mreProcess1Action.Set();
 
+                            #endregion release process1 write lock and signal process1 thread
 
                             #region copy from process1 buffers to spectrum plots
 
-                            if (threadData.rwlsProcessTo1.TryEnterReadLock(threadData.nProcess1WriteTimeout) == true)
+                            if (threadData.rwls1.TryEnterReadLock(threadData.nProcess1WriteTimeout) == true)
                             {
-                                switch (UIData.nULDisplayIndex)
-                                {
-                                    case 0: // Alazar      
-                                        #region main
-                                        switch (UIData.nULAlazarChannelIndex)
-                                        {
-                                            case 0: // OCT
-                                                #region OCT
-                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage / 2; nLine++)
-                                                    for (int mPoint = 0; mPoint < UIData.nLLAlazarLineLength; mPoint++)
-                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarOCT[nLine * UIData.nLLAlazarLineLength + mPoint];
-                                                break;
-                                            #endregion OCT
-                                            case 1: // MZI
-                                                #region MZI
-                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage / 2; nLine++)
-                                                    for (int mPoint = 0; mPoint < UIData.nLLAlazarLineLength; mPoint++)
-                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1AlazarMZI[nLine * UIData.nLLAlazarLineLength + mPoint];
-                                                break;
-                                            #endregion MZI
-                                            case 2: // Both channels
-                                                #region Both channels
-                                                for (int nLine = 0; nLine < UIData.nLLLinesPerChunk * UIData.nLLChunksPerImage; nLine++)
-                                                    for (int mPoint = 0; mPoint < UIData.nLLAlazarLineLength; mPoint++)
-                                                        UIData.pfULImage[nLine, mPoint] = threadData.pfProcess1Alazar[nLine * UIData.nLLAlazarLineLength + mPoint];
-                                                break;
-                                                #endregion Both channels
-                                        }
-                                        //Array.Clear(UIData.pfULImage, 0, UIData.pfULImage.Length);
-                                        #endregion
-                                        #region left
-                                        nAline = UIData.nULLeft;
-                                        if (nAline < 0) nAline = 0;
-                                        if (nAline >= threadData.nRawNumberAlines) nAline = threadData.nRawNumberAlines - 1;
-                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                            UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
-                                        #endregion
-                                        #region top
-                                        nPoint = UIData.nULTop;
-                                        if (nPoint < 0) nPoint = 0;
-                                        if (nPoint >= threadData.nRawAlineLength) nPoint = threadData.nRawAlineLength - 1;
-                                        for (nAline = 0; nAline < threadData.nRawNumberAlines; nAline++)
-                                            UIData.pfULTop[0, nAline] = UIData.pfULImage[nAline, nPoint];
-                                        #endregion
-                                        break;
-                                    case 1: // DAQ
-                                        Array.Clear(UIData.pfULImage, 0, UIData.pfULImage.Length);
-                                        Array.Clear(UIData.pfULTop, 0, UIData.pfULTop.Length);
-                                        Array.Clear(UIData.pfULLeft, 0, UIData.pfULLeft.Length);
-                                        break;
-                                    case 2: // IMAQ
-                                        #region IMAQ
-                                        switch (UIData.nLLSystemType)
-                                        {
-                                            case 0: // SD-OCT
-                                                #region main
-                                                Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, 0, UIData.pfULImage, 0, threadData.pfProcess1IMAQParallel.Length * sizeof(float));
-                                                #endregion
-                                                #region left
-                                                nAline = UIData.nULLeft;
-                                                if (nAline < 0) nAline = 0;
-                                                if (nAline >= threadData.nRawNumberAlines) nAline = threadData.nRawNumberAlines - 1;
-                                                for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                    UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
-                                                #endregion
-                                                #region top
-                                                nPoint = UIData.nULTop;
-                                                if (nPoint < 0) nPoint = 0;
-                                                if (nPoint >= threadData.nRawAlineLength) nPoint = threadData.nRawAlineLength - 1;
-                                                for (nAline = 0; nAline < threadData.nRawNumberAlines; nAline++)
-                                                    UIData.pfULTop[0, nAline] = UIData.pfULImage[nAline, nPoint];
-                                                #endregion
-                                                break;
-                                            case 1: // PS SD-OCT
-                                                #region main
-                                                switch (UIData.nULIMAQCameraIndex)
-                                                {
-                                                    case 0:  // parallel
-                                                        for (nAline = 0; nAline < 2; nAline++)
-                                                        {
-                                                            if (nAline % 2 == 0)
-                                                                nAlinePoint = nAline >> 1;
-                                                            else
-                                                                nAlinePoint = (nAline >> 1) + (threadData.nRawNumberAlines >> 1);
-                                                            for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                                UIData.pfULImage[nAlinePoint, nPoint] = -1f;
-                                                        }   // for (nAline
-                                                        for (nAline=2; nAline<threadData.nRawNumberAlines; nAline++)
-                                                        {
-                                                            nChunkPoint = nAline * threadData.nRawAlineLength;
-                                                            if (nAline % 2 == 0)
-                                                                nAlinePoint = nAline >> 1;
-                                                            else
-                                                                nAlinePoint = (nAline >> 1) + (threadData.nRawNumberAlines >> 1);
-                                                            for (nPoint=0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                                UIData.pfULImage[nAlinePoint, nPoint] = threadData.pfProcess1IMAQParallel[nChunkPoint + nPoint];
-                                                        }   // for (nAline
-                                                        break;
-                                                    case 1:  // perpendicular
-                                                        for (nAline = 0; nAline < 2; nAline++)
-                                                        {
-                                                            if (nAline % 2 == 0)
-                                                                nAlinePoint = nAline >> 1;
-                                                            else
-                                                                nAlinePoint = (nAline >> 1) + (threadData.nRawNumberAlines >> 1);
-                                                            for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                                UIData.pfULImage[nAlinePoint, nPoint] = -1f;
-                                                        }   // for (nAline
-                                                        for (nAline = 2; nAline < threadData.nRawNumberAlines; nAline++)
-                                                        {
-                                                            nChunkPoint = nAline * threadData.nRawAlineLength;
-                                                            if (nAline % 2 == 0)
-                                                                nAlinePoint = nAline >> 1;
-                                                            else
-                                                                nAlinePoint = (nAline >> 1) + (threadData.nRawNumberAlines >> 1);
-                                                            for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                                UIData.pfULImage[nAlinePoint, nPoint] = threadData.pfProcess1IMAQPerpendicular[nChunkPoint + nPoint];
-                                                        }   // for (nAline
-                                                        break;
-                                                    case 2:  // both
-                                                        for (nAline = 0; nAline < 2; nAline++)
-                                                        {
-                                                            if (nAline % 2 == 0)
-                                                                nAlinePoint = nAline >> 1;
-                                                            else
-                                                                nAlinePoint = (nAline >> 1) + (threadData.nRawNumberAlines >> 1);
-                                                            for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                            {
-                                                                UIData.pfULImage[nAlinePoint, nPoint] = -1;
-                                                                UIData.pfULImage[nAlinePoint + (threadData.nRawNumberAlines >> 2), nPoint] = -1;
-                                                            }
-                                                        }   // for (nAline
-                                                        for (nAline = 2; nAline < threadData.nRawNumberAlines >> 1; nAline++)
-                                                        {
-                                                            if (nAline % 2 == 0)
-                                                            {
-                                                                nChunkPoint = (2 * nAline) * threadData.nRawAlineLength;
-                                                                nAlinePoint = nAline >> 1;
-                                                            }
-                                                            else
-                                                            {
-                                                                nChunkPoint = (2 * nAline - 1) * threadData.nRawAlineLength;
-                                                                nAlinePoint = (nAline >> 1) + (threadData.nRawNumberAlines >> 1);
-                                                            }
-                                                            for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                            {
-                                                                UIData.pfULImage[nAlinePoint, nPoint] = threadData.pfProcess1IMAQParallel[nChunkPoint + nPoint];
-                                                                UIData.pfULImage[nAlinePoint + (threadData.nRawNumberAlines >> 2), nPoint] = threadData.pfProcess1IMAQPerpendicular[nChunkPoint + nPoint];
-                                                            }
-                                                        }   // for (nAline
-                                                        break;
-                                                }   // switch (UIData.nULIMAQCameraIndex
-                                                #endregion
-                                                #region left
-                                                nAlinePoint = UIData.nULLeft;
-                                                if (nAlinePoint < 0) nAlinePoint = 0;
-                                                if (nAlinePoint >= threadData.nRawNumberAlines) nAlinePoint = threadData.nRawNumberAlines - 1;
-                                                switch (UIData.nULIMAQCameraIndex)
-                                                {
-                                                    case 0:
-                                                        nAline = nAlinePoint % (threadData.nRawNumberAlines >> 1);
-                                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                        {
-                                                            UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
-                                                            UIData.pfULLeft[1, nPoint] = UIData.pfULImage[nAline + (threadData.nRawNumberAlines >> 1), nPoint];
-                                                        }
-                                                        break;
-                                                    case 1:
-                                                        nAline = nAlinePoint % (threadData.nRawNumberAlines >> 1);
-                                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                        {
-                                                            UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
-                                                            UIData.pfULLeft[1, nPoint] = UIData.pfULImage[nAline + (threadData.nRawNumberAlines >> 1), nPoint];
-                                                        }
-                                                        break;
-                                                    case 2:
-                                                        nAline = nAlinePoint % (threadData.nRawNumberAlines >> 2);
-                                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                                        {
-                                                            UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
-                                                            UIData.pfULLeft[1, nPoint] = UIData.pfULImage[nAline + (threadData.nRawNumberAlines >> 2), nPoint];
-                                                            UIData.pfULLeft[2, nPoint] = UIData.pfULImage[nAline + 2*(threadData.nRawNumberAlines >> 2), nPoint];
-                                                            UIData.pfULLeft[3, nPoint] = UIData.pfULImage[nAline + 3*(threadData.nRawNumberAlines >> 2), nPoint];
-                                                        }
-                                                        break;
-                                                }   // switch (UIData.nULIMAQCameraIndex
-                                                #endregion
-                                                #region top
-                                                nPoint = UIData.nULTop;
-                                                if (nPoint < 0) nPoint = 0;
-                                                if (nPoint >= threadData.nRawAlineLength) nPoint = threadData.nRawAlineLength - 1;
-                                                for (nAline = 0; nAline < threadData.nRawNumberAlines; nAline++)
-                                                {
-                                                    UIData.pfULTop[0, nAline] = UIData.pfULImage[nAline, nPoint];
-                                                }
-                                                #endregion
-                                                break;
-                                            case 2: // line field
-                                                break;
-                                            case 3: // OFDI
-                                                Array.Clear(UIData.pfULImage, 0, UIData.pfULImage.Length);
-                                                Array.Clear(UIData.pfULTop, 0, UIData.pfULTop.Length);
-                                                Array.Clear(UIData.pfULLeft, 0, UIData.pfULLeft.Length);
-                                                break;
-                                            case 4: // PS OFDI
-                                                Array.Clear(UIData.pfULImage, 0, UIData.pfULImage.Length);
-                                                Array.Clear(UIData.pfULTop, 0, UIData.pfULTop.Length);
-                                                Array.Clear(UIData.pfULLeft, 0, UIData.pfULLeft.Length);
-                                                break;
-                                        }   // switch (UIData.nLLSystemType
-                                        #endregion
-                                        break;
-                                    case 3: // intensity
-                                        break;
-                                }   // switch (UIData.nULDisplayIndex
 
-                                threadData.rwlsProcessTo1.ExitReadLock();
+                                if (UIData.nULDisplayIndex == 0)  // raw data
+                                {
+
+                                    #region main UL image
+
+                                    Buffer.BlockCopy(threadData.pf1Interference, 0, UIData.pfULImage, 0, threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration * threadData.n1LineLength * sizeof(float));
+
+                                    #endregion main UL image
+
+                                    #region left
+
+                                    nLine = UIData.nULLeft;
+                                    if (nLine < 0)
+                                        nLine = 0;
+                                    if (nLine >= threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration)
+                                        nLine = threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration - 1;
+
+                                    for (nPoint = 0; nPoint < threadData.n1LineLength; nPoint++)
+                                        UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nLine, nPoint];
+
+                                    // XXX add in DAQ data
+
+                                    #endregion left
+
+                                    #region top
+
+                                    nPoint = UIData.nULTop;
+                                    if (nPoint < 0)
+                                        nPoint = 0;
+                                    if (nPoint >= threadData.n1LineLength)
+                                        nPoint = threadData.n1LineLength - 1;
+
+                                    for (nLine = 0; nLine < threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration; nLine++)
+                                        UIData.pfULTop[0, nLine] = UIData.pfULImage[nLine, nPoint];
+
+                                    // XXX add in calibration data
+
+                                    #endregion top
+
+                                }   // if (UIData.nULDisplayIndex
+
+                                threadData.rwls1.ExitReadLock();
 
                             }   // if (threadData.rwlsProcessTo1.TryEnterReadLock
 
                             #endregion  // copy from process1 buffers to spectrum plots
 
                         }
-                        else
+                        else  // if (threadData.rwlsProcessTo1.TryEnterWriteLock
                         {
+
+                            #region mark and release node
+
                             nodeProcess.Value.nProcessed = 2;
-                        }
-                        nodeProcess.Value.rwls.ExitReadLock();
+                            nodeProcess.Value.rwls.ExitReadLock();
+
+                            #endregion mark and release node
+
+                        }    // if (threadData.rwlsProcessTo1.TryEnterWriteLock
+
                         nodeProcess = nodeProcess.Next;
                         if (nodeProcess == null)
                             nodeProcess = nodeList.First;
@@ -3157,7 +3024,7 @@ namespace nOCT
                         threadData.mreMainKill.Set();
                     }  // if (nodeProcess.Value.rwls.TryEnterReadLock
 
-                    #endregion  // work on most recent acquired node
+                    #endregion work on most recent acquired node
 
                 }  // while (WaitHandle.WaitAny
 
@@ -3181,12 +3048,12 @@ namespace nOCT
                 threadData.strProcessThreadStatus = "Done.";
             }  // if (bTroublemaker
 
-            #endregion  // cleanup
+            #endregion  cleanup
 
         }
 
 
-        void calculateCalibration(int nNumberLines, float[] pfData, float[] pfMask, ref float[] pfDepthProfile, int nLeft, int nRight, ref float[] pfSpectrum, ref float[] pfPhase, ref float[] pfK, ref int[] pnIndex)
+        void calculateCalibrationOld(int nNumberLines, float[] pfData, float[] pfMask, ref float[] pfDepthProfile, int nLeft, int nRight, ref float[] pfSpectrum, ref float[] pfPhase, ref float[] pfK, ref int[] pnIndex)
         {
             int nLine, nPoint, nLineLength = pfMask.Length, nTemp, nLast;
             float fTemp;
@@ -3558,6 +3425,8 @@ namespace nOCT
 
             #endregion header
 
+            fileStream.Seek(1024, SeekOrigin.Begin);
+
             #region pfK
 
             Buffer.BlockCopy(pfK, 0, byteBuffer, 0, pfK.Length * sizeof(float));
@@ -3681,53 +3550,6 @@ namespace nOCT
         }   // calculateDispersion
 
 
-        void calculateMask(int nLeft, int nRight, int nRound, ref float[] pfMask)
-        {
-            int nPoint, nLineLength = pfMask.Length;
-
-            #region error check mask parameters
-            if (nRound < 1)
-                nRound = 1;
-            if (nRound > (nLineLength >> 2))
-                nRound = nLineLength >> 2;
-
-            if (nLeft < nRound)
-                nLeft = nRound;
-            if (nLeft > nLineLength - nRound - 1)
-                nLeft = nLineLength - nRound - 1;
-
-            if (nRight < nRound + 1)
-                nRight = nRound + 1;
-            if (nRight > nLineLength - nRound)
-                nRight = nLineLength - nRound;
-
-            if (nLeft >= nRight)
-                nRight = nLeft + 1;
-            #endregion get mask parameters (and error check)
-
-            #region actual calculation
-
-            Array.Clear(pfMask, 0, pfMask.Length);
-
-            for (nPoint = 0; nPoint < nLeft - nRound; nPoint++)
-                pfMask[nPoint] = 0.0f;
-
-            for (nPoint = nLeft - nRound; nPoint < nLeft; nPoint++)
-                pfMask[nPoint] = Convert.ToSingle(0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(nLeft - nPoint) / Convert.ToDouble(nRound))));
-
-            for (nPoint = nLeft; nPoint < nRight; nPoint++)
-                pfMask[nPoint] = 1.0f;
-
-            for (nPoint = nRight; nPoint < nRight + nRound; nPoint++)
-                pfMask[nPoint] = Convert.ToSingle(0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(nPoint - nRight) / Convert.ToDouble(nRound))));
-
-            for (nPoint = nRight + nRound; nPoint < nLineLength; nPoint++)
-                pfMask[nPoint] = 0.0f;
-
-            #endregion actual calculation
-        }   // calculateMask
-
-
         void loadDispersion(string strFilename, int nLineLength, ref float[] pfR, ref float[] pfI)
         {
             try
@@ -3803,8 +3625,115 @@ namespace nOCT
         }
 
 
+        void calculateMask(int nLeft, int nRight, int nRound, ref float[] pfMask)
+        {
+            int nPoint, nLineLength = pfMask.Length;
+
+            #region error check mask parameters
+            if (nRound < 1)
+                nRound = 1;
+            if (nRound > (nLineLength >> 2))
+                nRound = nLineLength >> 2;
+
+            if (nLeft < nRound)
+                nLeft = nRound;
+            if (nLeft > nLineLength - nRound - 1)
+                nLeft = nLineLength - nRound - 1;
+
+            if (nRight < nRound + 1)
+                nRight = nRound + 1;
+            if (nRight > nLineLength - nRound)
+                nRight = nLineLength - nRound;
+
+            if (nLeft >= nRight)
+                nRight = nLeft + 1;
+
+            #endregion get mask parameters (and error check)
+
+            #region actual calculation
+
+            Array.Clear(pfMask, 0, pfMask.Length);
+
+            for (nPoint = 0; nPoint < nLeft - nRound; nPoint++)
+                pfMask[nPoint] = 0.0f;
+
+            for (nPoint = nLeft - nRound; nPoint < nLeft; nPoint++)
+                pfMask[nPoint] = Convert.ToSingle(0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(nLeft - nPoint) / Convert.ToDouble(nRound))));
+
+            for (nPoint = nLeft; nPoint < nRight; nPoint++)
+                pfMask[nPoint] = 1.0f;
+
+            for (nPoint = nRight; nPoint < nRight + nRound; nPoint++)
+                pfMask[nPoint] = Convert.ToSingle(0.5 * (1.0 + Math.Cos(Math.PI * Convert.ToDouble(nPoint - nRight) / Convert.ToDouble(nRound))));
+
+            for (nPoint = nRight + nRound; nPoint < nLineLength; nPoint++)
+                pfMask[nPoint] = 0.0f;
+
+            #endregion actual calculation
+        }   // calculateMask
+
+        void calculateCalibration(float[] pfData, float[] pfMask, int nLineToShow, ref float[] pfDepthProfile)
+        {
+            #region initialization
+
+            int nLineLength = pfMask.Length;
+            int nNumberLines = pfData.Length / nLineLength;
+
+            if (nLineToShow < 0) nLineToShow = 0;
+            if (nLineToShow >= nNumberLines) nLineToShow = nNumberLines - 1;
+
+            #endregion initialization
+
+            #region allocations that should be pre-initialized
+
+            double[] pdLine = new double[nLineLength];
+            ComplexDouble[] pcdFFT = new ComplexDouble[nLineLength];
+
+            #endregion allocations that should be pre-initialized
+
+            for (int nLine = 0; nLine < nNumberLines; nLine++)
+            {
+                #region copy one float line to double array (prep for NI fft)
+                Array.Copy(pfData, nLine * nLineLength, pdLine, 0, nLineLength);
+                #endregion copy one float line to double array (prep for NI fft)
+
+                #region forward fft
+                pcdFFT = NationalInstruments.Analysis.Dsp.Transforms.RealFft(pdLine);
+                #endregion forward fft
+
+                #region copy non-masked depth profile of choice
+                if (nLine == nLineToShow)
+                    for (int nPoint = 0; nPoint < (nLineLength >> 1); nPoint++)
+                        pfDepthProfile[0 * (nLineLength >> 1) + nPoint] = (float)(20.0 * Math.Log10(pcdFFT[nPoint].Magnitude));
+                #endregion copy non-masked depth profile of choice
+
+                #region multiply mask
+                for (int nPoint =0; nPoint < (nLineLength >> 1); nPoint++)
+                {
+                    pcdFFT[nPoint].Real = pfMask[nPoint] * pcdFFT[nPoint].Real;
+                    pcdFFT[nPoint].Imaginary = pfMask[nPoint] * pcdFFT[nPoint].Imaginary;
+                }   // for (int nPoint
+                for (int nPoint=(nLineLength >> 1); nPoint < nLineLength; nPoint++)
+                {
+                    pcdFFT[nPoint].Real = 0.0;
+                    pcdFFT[nPoint].Imaginary = 0.0;
+                }   // for (int nPoint
+                #endregion multiply mask
+
+                #region copy masked depth profile of choice
+                if (nLine == nLineToShow)
+                    for (int nPoint = 0; nPoint < (nLineLength >> 1); nPoint++)
+                        pfDepthProfile[1 * (nLineLength >> 1) + nPoint] = (float)(20.0 * Math.Log10(pcdFFT[nPoint].Magnitude));
+                #endregion copy masked depth profile of choice
+
+            }   // for (int nLine
+
+        }   // void calculateCalibration
+
+
         void Process1Thread()
         {
+
             #region initializing
 
             threadData.strProcess1ThreadStatus = "Initializing...";
@@ -3828,101 +3757,61 @@ namespace nOCT
             #region variables for main loop
 
             #region define general use variables
-            int nAline, nPoint;
-            int nNumberLines = threadData.nRawNumberAlines;
-            int nNumberLinesPerChannel = threadData.nRawNumberAlines / 2;
-            int nLineLength = threadData.nRawAlineLength;
-            float[] pfLine = new float[nLineLength];
-            float[] pfTemp = new float[nLineLength];
-            float[] pfSum = new float[nLineLength];
+
+            int nPoint, n1LineLength = threadData.n1LineLength;
+            int nSet, n1NumberCalibrationLines = threadData.n1NumberCalibrationLines;
+            int n1NumberInterferenceLinesPerCalibration = threadData.n1NumberInterferenceLinesPerCalibration;
+
+            int nLine, nLineCount, n1NumberLines = n1NumberCalibrationLines * n1NumberInterferenceLinesPerCalibration;
+            int n1QuarterLines = n1NumberLines >> 2;
+            float f1QuarterLines = (float)(n1QuarterLines);
+
+            float[] pfLine = new float[n1LineLength];
+            float[] pfSum = new float[n1LineLength];
+            float[] pfTemp = new float[n1LineLength];
+
             #endregion define general use variables
 
-            #region define number of sets and number of lines per set
-            int nNumberSets = 0;
-            int nNumberSetsPerChannel = 0;
-            int nNumberLinesPerSet = 0;
-            int nNumberCalibrationDisplayLines = 0;
-            switch (UIData.nLLSystemType)
-            {
-                case 0: // SD-OCT
-                    #region SD-OCT
-                    nNumberSets = 1;
-                    nNumberLinesPerSet = nNumberLines;
-                    nNumberCalibrationDisplayLines = 1;
-                    break;
-                    #endregion SD-OCT
-                case 1: // PS SD-OCT
-                    #region PS SD-OCT
-                    nNumberSets = 4;
-                    nNumberLinesPerSet = nNumberLines >> 1;
-                    nNumberCalibrationDisplayLines = 4;
-                    break;
-                    #endregion PS SD-OCT
-                case 2: // line field
-                    break;
-                case 3: // OFDI
-                    nNumberSets = nNumberLines;
-                    nNumberSetsPerChannel = nNumberLinesPerChannel;
-                    nNumberLinesPerSet = 1;
-                    nNumberCalibrationDisplayLines = 1;
-                    break;
-                case 4: // PS OFDI
-                    break;
-            }   // switch (UIData.nLLSystemType
-            #endregion define number of sets and numbers of lines per set
-
             #region define reference variables
-            float[] pfReference = null;
-            float[] pfReferenceRecorded = null;
-            switch (UIData.nLLSystemType)
-            {
-                case 0: // SD-OCT
-                    #region SD-OCT
-                    pfReference = new float[nLineLength];
-                    pfReferenceRecorded = new float[nLineLength];
-                    break;
-                    #endregion SD-OCT
-                case 1: // PS SD-OCT
-                    #region PS SD-OCT
-                    pfReference = new float[4 * nLineLength];
-                    pfReferenceRecorded = new float[4 * nLineLength];
-                    break;
-                    #endregion PS SD-OCT
-                case 2: // line field
-                    break;
-                case 3: // OFDI
-                    pfReference = new float[nLineLength];
-                    pfReferenceRecorded = new float[nLineLength];
-                    break;
-                case 4: // PS OFDI
-                    break;
-            }   // switch (UIData.nLLSystemType
+
+            float[] pfReference = new float[4 * n1LineLength];
+            float[] pfReferenceRecorded = new float[4 * n1LineLength];
+
             Array.Clear(pfReference, 0, pfReference.Length);
             Array.Clear(pfReferenceRecorded, 0, pfReferenceRecorded.Length);
+
             #endregion define reference variables
+
+            #region local calibration and interference arrays
+
+            float[] pfCalibration = new float[n1NumberCalibrationLines * n1LineLength];
+            float[] pfInterference = new float[n1NumberLines * n1LineLength];
+
+            #endregion local calibration and interference arrays
+
+            float[] pfCalibrationDepthProfile = new float[2 * (n1LineLength >> 1)];
 
             #region calibration data structures
 
             #region necessary for calculation
 
-            float[] pfCalibrationData = new float[nNumberSets * nLineLength];
+            //float[] pfCalibrationData = new float[nNumberSets * nLineLength];
 
-            float[] pfCalibrationMask = new float[nLineLength];
+            float[] pfCalibrationMask = new float[n1LineLength];
 
-            int nCalibrationPhaseLeft, nCalibrationPhaseRight;
+            //int nCalibrationPhaseLeft, nCalibrationPhaseRight;
 
-            float[] pfK = new float[nNumberSets * nLineLength];
-            int[] pnIndex = new int[nNumberSets * nLineLength];
-            clearCalibration(nNumberSets, ref pfK, ref pnIndex);
-            loadCalibration(UIData.strCalibrationFile, nNumberSets, nNumberLinesPerSet, nLineLength, ref pfK, ref pnIndex);
+            //float[] pfK = new float[nNumberSets * nLineLength];
+            //int[] pnIndex = new int[nNumberSets * nLineLength];
+            //clearCalibration(nNumberSets, ref pfK, ref pnIndex);
+            //loadCalibration(UIData.strCalibrationFile, nNumberSets, nNumberLinesPerSet, nLineLength, ref pfK, ref pnIndex);
 
             #endregion necessary for calculation
 
             #region for display
 
-            float[] pfCalibrationDepthProfile = new float[(2 * nNumberCalibrationDisplayLines) * (nLineLength >> 1)];
-            float[] pfCalibrationSpectrum = new float[(2 * nNumberCalibrationDisplayLines) * nLineLength];
-            float[] pfCalibrationPhase = new float[(nNumberCalibrationDisplayLines + 1) * nLineLength];
+            //float[] pfCalibrationSpectrum = new float[(2 * nNumberCalibrationDisplayLines) * nLineLength];
+            //float[] pfCalibrationPhase = new float[(nNumberCalibrationDisplayLines + 1) * nLineLength];
 
             #endregion for display
 
@@ -3932,24 +3821,24 @@ namespace nOCT
 
             #region necessary for calculation
 
-            float[] pfDispersionData = new float[nLineLength];
+            //float[] pfDispersionData = new float[nLineLength];
 
-            float[] pfDispersionMask = new float[nLineLength];
+            //float[] pfDispersionMask = new float[nLineLength];
 
-            int nDispersionPhaseLeft, nDispersionPhaseRight;
+            //int nDispersionPhaseLeft, nDispersionPhaseRight;
 
-            float[] pfDispersionR = new float[nLineLength];
-            float[] pfDispersionI = new float[nLineLength];
-            clearDispersion(ref pfDispersionR, ref pfDispersionI);
-            loadDispersion(UIData.strDispersionFile, nLineLength, ref pfDispersionR, ref pfDispersionI);
+            //float[] pfDispersionR = new float[nLineLength];
+            //float[] pfDispersionI = new float[nLineLength];
+            //clearDispersion(ref pfDispersionR, ref pfDispersionI);
+            //loadDispersion(UIData.strDispersionFile, nLineLength, ref pfDispersionR, ref pfDispersionI);
 
             #endregion necessary for calculation
 
             #region for display
 
-            float[] pfDispersionDepthProfile = new float[2 * (nLineLength >> 1)];
-            float[] pfDispersionSpectrum = new float[2 * nLineLength];
-            float[] pfDispersionPhase = new float[3 * nLineLength];
+            //float[] pfDispersionDepthProfile = new float[2 * (nLineLength >> 1)];
+            //float[] pfDispersionSpectrum = new float[2 * nLineLength];
+            //float[] pfDispersionPhase = new float[3 * nLineLength];
 
             #endregion for display
 
@@ -3959,28 +3848,19 @@ namespace nOCT
 
             #region necessary for calculation
 
-            float[] pfOCTData;
-            switch (UIData.nLLSystemType)
-            {
-                default:
-                    pfOCTData = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
-                    break;
-                case 3: // OFDI
-                    pfOCTData = new float[nNumberSetsPerChannel * nNumberLinesPerSet * nLineLength];
-                    break;
-            }
-            float[] pfR = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
-            float[] pfI = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
+            //float[] pfOCTData = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
 
-            float[] pfFFTMask = new float[nLineLength];
-            calculateMask(UIData.nFFTMaskLeft, UIData.nFFTMaskRight, UIData.nFFTMaskRound, ref pfFFTMask);
+            //float[] pfR = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
+            //float[] pfI = new float[nNumberSets * nNumberLinesPerSet * nLineLength];
+
+            //float[] pfFFTMask = new float[nLineLength];
+            //calculateMask(UIData.nFFTMaskLeft, UIData.nFFTMaskRight, UIData.nFFTMaskRound, ref pfFFTMask);
 
             #endregion necessary for calculation
 
             #region for display
 
-            float[] pfIntensity = new float[nNumberLines * nLineLength];
-            float[] pfIntensityAlazar = new float[nNumberLines * UIData.nLLAlazarLineLength];
+            //float[] pfIntensity = new float[nNumberLines * nLineLength];
 
             #endregion for display
 
@@ -3994,7 +3874,6 @@ namespace nOCT
 
             #endregion  // initializing
 
-
             #region main loop
 
             threadData.strProcess1ThreadStatus = "Set...";
@@ -4006,909 +3885,789 @@ namespace nOCT
                 {
                     threadData.mreProcess1Action.Reset();
                     threadData.strProcess1ThreadStatus = "try read lock!";
-                    if (threadData.rwlsProcessTo1.TryEnterReadLock(threadData.nProcess1WriteTimeout) == true)
+                    if (threadData.rwls1.TryEnterReadLock(threadData.nProcess1WriteTimeout) == true)
                     {
                         threadData.strProcess1ThreadStatus = "working...";
                         threadData.nProcess1Node = threadData.nProcessNode;
 
                         threadData.nProcess2Type = UIData.nURDisplayIndex;
 
-                        #region read from process1 buffers, calculate and subtract reference
+                        #region read from process1 buffers, calculate and subtract reference, copy to appropriate local buffers
 
-                        #region calculate reference arrays
+                        #region calculate reference spectra
 
-                        switch (UIData.nLLSystemType)
+                        switch (UIData.nLRReferenceMethod)
                         {
-                            case 0: // SD-OCT
-                                #region SD-OCT
-                                switch (UIData.nLRReferenceMethod)
+                            case 0:  // none
+                                Array.Clear(pfReference, 0, pfReference.Length);
+                                break;
+                            case 1:  // use average
+                                #region calculate averages of each quarter section
+
+                                nLineCount = 0;
+                                for (nSet = 0; nSet < 4; nSet++)
                                 {
-                                    case 0:  // none
-                                        Array.Clear(pfReference, 0, pfReference.Length);
-                                        break;
-                                    case 1:  // use average
-                                        #region calculate parallel even
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline++)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
-                                        #endregion calculate parallel even
-                                        break;
-                                    case 2:  // record
-                                        #region calculate parallel even
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline++)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
-                                        #endregion calculate parallel even
-                                        Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
-                                        break;
-                                    case 3:  // use recorded
-                                        Buffer.BlockCopy(pfReferenceRecorded, 0, pfReference, 0, pfReference.Length * sizeof(float));
-                                        break;
-                                }   // switch (UIData.nLRCalibrationReferenceMethod
+                                    Array.Clear(pfSum, 0, pfSum.Length);
+                                    for (nLine = 0; nLine < f1QuarterLines; nLine++)
+                                    {
+                                        Buffer.BlockCopy(threadData.pf1Interference, nLineCount * n1LineLength * sizeof(float), pfLine, 0, pfLine.Length * sizeof(float));
+                                        nLineCount++;
+                                        pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
+                                    }   // for (nLine
+                                    for (nPoint = 0; nPoint < n1LineLength; nPoint++)
+                                        pfReference[nSet * n1LineLength + nPoint] = pfSum[nPoint] / f1QuarterLines;
+                                }   // for (nSet
+
+                                #endregion calculate average of each quarter section
                                 break;
-                            #endregion SD-OCT
-                            case 1: // PS SD-OCT
-                                #region PS SD-OCT
-                                switch (UIData.nLRReferenceMethod)
+                            case 2:  // record
+                                #region calculate averages of each quarter section
+
+                                nLineCount = 0;
+                                for (nSet = 0; nSet < 4; nSet++)
                                 {
-                                    case 0:  // none
-                                        Array.Clear(pfReference, 0, pfReference.Length);
-                                        break;
-                                    case 1:  // use average
-                                        #region calculate parallel even
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion calculate parallel even
-                                        #region calculate parallel odd
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 1; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[1 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion
-                                        #region calculate perpendicular even
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQPerpendicular, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                            pfReference[2 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion
-                                        #region calculate perpendicular odd
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 1; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQPerpendicular, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[3 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion
-                                        break;
-                                    case 2:  // record
-                                        #region calculate parallel even
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion calculate parallel even
-                                        #region calculate parallel odd
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 1; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[1 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion
-                                        #region calculate perpendicular even
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQPerpendicular, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                            pfReference[2 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion
-                                        #region calculate perpendicular odd
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 1; nAline < nNumberLines; nAline += 2)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1IMAQPerpendicular, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[3 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                        #endregion
-                                        Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
-                                        break;
-                                    case 3:  // use recorded
-                                        Buffer.BlockCopy(pfReferenceRecorded, 0, pfReference, 0, pfReference.Length * sizeof(float));
-                                        break;
-                                }   // switch (UIData.nLRCalibrationReferenceMethod
+                                    Array.Clear(pfSum, 0, pfSum.Length);
+                                    for (nLine = 0; nLine < f1QuarterLines; nLine++)
+                                    {
+                                        Buffer.BlockCopy(threadData.pf1Interference, nLineCount * n1LineLength * sizeof(float), pfLine, 0, pfLine.Length * sizeof(float));
+                                        nLineCount++;
+                                        pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
+                                    }   // for (nLine
+                                    for (nPoint = 0; nPoint < n1LineLength; nPoint++)
+                                        pfReference[nSet * n1LineLength + nPoint] = pfSum[nPoint] / f1QuarterLines;
+                                }   // for (nSet
+
+                                #endregion calculate average of each quarter section
+
+                                Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReferenceRecorded.Length * sizeof(float));
                                 break;
-                                #endregion PS SD-OCT
-                            case 2: // line field
+                            case 3:  // use recorded
+                                Buffer.BlockCopy(pfReferenceRecorded, 0, pfReference, 0, pfReferenceRecorded.Length * sizeof(float));
                                 break;
-                            case 3: // OFDI
-                                #region OFDI
-                                switch (UIData.nLRReferenceMethod)
+                        }
+
+                        #endregion calculate reference spectra
+
+                        #region transfer calibration and interference arrays from process1 buffers (with reference subtraction)
+
+                        switch (threadData.nProcess1ProcessingType)
+                        {
+                            case 0:  // NI
+
+                                nLineCount = 0;
+
+                                for (nSet = 0; nSet < n1NumberCalibrationLines; nSet++)
                                 {
-                                    case 0:  // none
-                                        #region none
-                                        Array.Clear(pfReference, 0, pfReference.Length);
-                                        break;
-                                        #endregion none
-                                    case 1:  // use average
-                                        #region use average
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
 
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesPerChannel));
-                                        #endregion use average
-                                        break;
-                                    case 2:  // record
-                                        #region record and copy into pfReferenceRecorded
-                                        Array.Clear(pfSum, 0, pfSum.Length);
-                                        for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
-                                        {
-                                            Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                        }   // for (nAline
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfReference[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesPerChannel));
+                                    #region copy calibration line
 
-                                        Buffer.BlockCopy(pfReference, 0, pfReferenceRecorded, 0, pfReference.Length * sizeof(float));
-                                        break;
-                                        #endregion record and copy into pfReferenceRecorded
-                                    case 3:  // use recorded
-                                        #region use recorded
-                                        Buffer.BlockCopy(pfReferenceRecorded, 0, pfReference, 0, pfReference.Length * sizeof(float));
-                                        break;
-                                        #endregion use recorded
-                                }   // switch (UIData.nLRCalibrationReferenceMethod                            case 4: // PS OFDI
+                                    Buffer.BlockCopy(threadData.pf1Calibration, nSet * n1LineLength * sizeof(float), pfCalibration, nSet * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
+
+                                    #endregion copy calibration line
+
+                                    #region copy interference section with reference subtracted
+
+                                    #region copy appropriate reference line to pfTemp
+                                    if ((nLineCount % n1QuarterLines) == 0)
+                                        Buffer.BlockCopy(pfReference, (nLineCount / n1QuarterLines) * n1LineLength * sizeof(float), pfTemp, 0, pfTemp.Length * sizeof(float));
+                                    #endregion copy appropriate reference line to pfTemp
+
+                                    for (nLine = 0; nLine < n1NumberInterferenceLinesPerCalibration; nLine++)
+                                    {
+                                        #region copy line from pf1Interference to pfLine
+                                        Buffer.BlockCopy(threadData.pf1Interference, nLineCount * n1LineLength * sizeof(float), pfLine, 0, pfLine.Length * sizeof(float));
+                                        #endregion copy line from pf1Interference to pfLine
+
+                                        #region subtract reference array from pfLine
+                                        pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
+                                        #endregion subtract reference array from pfLine
+
+                                        #region copy subtracted line to local interference array
+                                        Buffer.BlockCopy(pfLine, 0, pfInterference, nLineCount * n1LineLength * sizeof(float), pfLine.Length * sizeof(float));
+                                        #endregion copy subtracted line to local interference array
+
+                                        nLineCount++;
+                                    }   // for (nLine
+
+                                    #endregion copy interference section with reference subtracted
+
+                                }   // for (nSet
+
                                 break;
-                                #endregion OFDI
-                        }   // switch (UIData.nLLSystemType
+                            case 1:  // IPP
 
-                        #endregion  // calculate reference arrays
+                                // IPP dll call to copy data to IPP memory, pass back reference and reference recorded arrays
 
-                        #region update graphs if requested
+                                break;
+                            case 2:  // CUDA
+
+                                // CUDA dll call to copy data to CUDA host memory, pass back reference and reference recorded arrays
+
+                                break;
+                        }
+
+                        #endregion transfer calibration and interference arrays from process1 buffers (with reference subtraction)
+
+                        #endregion  read from process1 buffers, calculate and subtract reference, copy to appropriate local buffers
+
+                        #region copy raw data buffers to process2 for spectral binning
+
+                        if ((threadData.nProcess2Type == 8) && (UIData.nLLSystemType == 1))
+                        {
+                            Buffer.BlockCopy(threadData.pf1Calibration, 0, threadData.pf2Calibration, 0, threadData.pf1Calibration.Length * sizeof(float));
+                            Buffer.BlockCopy(threadData.pf1Interference, 0, threadData.pf2Interference, 0, threadData.pf1Interference.Length * sizeof(float));
+                        }   // if ((threadData.nProcess2Type
+
+                        #endregion copy raw data buffers to process2 for spectral binning
+
+                        threadData.rwls1.ExitReadLock();
+
+                        #region copy reference arrays to graph (if requested)
 
                         if (UIData.bLRReferenceActive)
-                            switch (UIData.nLLSystemType)
+                            switch (UIData.nLRReferenceDisplay)
                             {
-                                case 0: // SD-OCT
-                                    #region SD-OCT
-                                    switch (UIData.nLRReferenceDisplay)
-                                    {
-                                        case 0:  // all
-                                            Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), UIData.pfReference, 0 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            break;
-                                        case 1:  // parallel even
-                                            Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), UIData.pfReference, 0 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            break;
-                                        case 2:  // parallel odd
-                                            Array.Clear(UIData.pfReference, 0, nLineLength);
-                                            break;
-                                        case 3:  // perpendicular even
-                                            Array.Clear(UIData.pfReference, 0, nLineLength);
-                                            break;
-                                        case 4:  // perpendicular odd
-                                            Array.Clear(UIData.pfReference, 0, nLineLength);
-                                            break;
-                                    }   // switch (UIData.nLRCalibrationReferenceDisplay
+                                case 0:  // all
+                                    Buffer.BlockCopy(pfReference, 0 * n1LineLength * sizeof(float), UIData.pfReference, 0 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
+                                    Buffer.BlockCopy(pfReference, 1 * n1LineLength * sizeof(float), UIData.pfReference, 1 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
+                                    Buffer.BlockCopy(pfReference, 2 * n1LineLength * sizeof(float), UIData.pfReference, 2 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
+                                    Buffer.BlockCopy(pfReference, 3 * n1LineLength * sizeof(float), UIData.pfReference, 3 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
                                     break;
-                                    #endregion SD-OCT
-                                case 1: // PS SD-OCT
-                                    #region PS SD-OCT
-                                    switch (UIData.nLRReferenceDisplay)
-                                    {
-                                        case 0:  // all
-                                            Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), UIData.pfReference, 0 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            Buffer.BlockCopy(pfReference, 1 * nLineLength * sizeof(float), UIData.pfReference, 1 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            Buffer.BlockCopy(pfReference, 2 * nLineLength * sizeof(float), UIData.pfReference, 2 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            Buffer.BlockCopy(pfReference, 3 * nLineLength * sizeof(float), UIData.pfReference, 3 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            break;
-                                        case 1:  // parallel even
-                                            Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), UIData.pfReference, 0 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            Array.Clear(UIData.pfReference, 1 * nLineLength, nLineLength);
-                                            Array.Clear(UIData.pfReference, 2 * nLineLength, nLineLength);
-                                            Array.Clear(UIData.pfReference, 3 * nLineLength, nLineLength);
-                                            break;
-                                        case 2:  // parallel odd
-                                            Array.Clear(UIData.pfReference, 0 * nLineLength, nLineLength);
-                                            Buffer.BlockCopy(pfReference, 1 * nLineLength * sizeof(float), UIData.pfReference, 1 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            Array.Clear(UIData.pfReference, 2 * nLineLength, nLineLength);
-                                            Array.Clear(UIData.pfReference, 3 * nLineLength, nLineLength);
-                                            break;
-                                        case 3:  // perpendicular even
-                                            Array.Clear(UIData.pfReference, 0 * nLineLength, nLineLength);
-                                            Array.Clear(UIData.pfReference, 1 * nLineLength, nLineLength);
-                                            Buffer.BlockCopy(pfReference, 2 * nLineLength * sizeof(float), UIData.pfReference, 2 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            Array.Clear(UIData.pfReference, 3 * nLineLength, nLineLength);
-                                            break;
-                                        case 4:  // perpendicular odd
-                                            Array.Clear(UIData.pfReference, 0 * nLineLength, nLineLength);
-                                            Array.Clear(UIData.pfReference, 1 * nLineLength, nLineLength);
-                                            Array.Clear(UIData.pfReference, 2 * nLineLength, nLineLength);
-                                            Buffer.BlockCopy(pfReference, 3 * nLineLength * sizeof(float), UIData.pfReference, 3 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                            break;
-                                    }   // switch (UIData.nLRCalibrationReferenceDisplay
+                                case 1:  // parallel even
+                                    Buffer.BlockCopy(pfReference, 0 * n1LineLength * sizeof(float), UIData.pfReference, 0 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
+                                    Array.Clear(UIData.pfReference, 1 * n1LineLength, n1LineLength);
+                                    Array.Clear(UIData.pfReference, 2 * n1LineLength, n1LineLength);
+                                    Array.Clear(UIData.pfReference, 3 * n1LineLength, n1LineLength);
                                     break;
-                                    #endregion PS SD-OCT
-                                case 2: // line field
+                                case 2:  // parallel odd
+                                    Array.Clear(UIData.pfReference, 0 * n1LineLength, n1LineLength);
+                                    Buffer.BlockCopy(pfReference, 1 * n1LineLength * sizeof(float), UIData.pfReference, 1 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
+                                    Array.Clear(UIData.pfReference, 2 * n1LineLength, n1LineLength);
+                                    Array.Clear(UIData.pfReference, 3 * n1LineLength, n1LineLength);
                                     break;
-                                case 3: // OFDI
-                                    #region OFDI
-                                    Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), UIData.pfReference, 0 * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                    #endregion OFDI
+                                case 3:  // perpendicular even
+                                    Array.Clear(UIData.pfReference, 0 * n1LineLength, n1LineLength);
+                                    Array.Clear(UIData.pfReference, 1 * n1LineLength, n1LineLength);
+                                    Buffer.BlockCopy(pfReference, 2 * n1LineLength * sizeof(float), UIData.pfReference, 2 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
+                                    Array.Clear(UIData.pfReference, 3 * n1LineLength, n1LineLength);
                                     break;
-                                case 4: // PS OFDI
+                                case 4:  // perpendicular odd
+                                    Array.Clear(UIData.pfReference, 0 * n1LineLength, n1LineLength);
+                                    Array.Clear(UIData.pfReference, 1 * n1LineLength, n1LineLength);
+                                    Array.Clear(UIData.pfReference, 2 * n1LineLength, n1LineLength);
+                                    Buffer.BlockCopy(pfReference, 3 * n1LineLength * sizeof(float), UIData.pfReference, 3 * n1LineLength * sizeof(float), n1LineLength * sizeof(float));
                                     break;
-                            }   // switch (UIData.nLLSystemType
+                            }   // switch (UIData.nLRCalibrationReferenceDisplay
 
-                        #endregion  // update graphs if requested
+                        #endregion copy reference arrays to graph (if requested)
 
-                        #region copy process1 to process2 for spectral binning
-                        if (threadData.nProcess2Type == 8)
-                        {
-                            Array.Copy(threadData.pfProcess1IMAQParallel, threadData.pfProcess2AIMAQParallel, threadData.pfProcess1IMAQParallel.Length);    // bhp change to block copy
-                            Array.Copy(threadData.pfProcess1IMAQPerpendicular, threadData.pfProcess2AIMAQPerpendicular, threadData.pfProcess1IMAQPerpendicular.Length);
-                        }
-                        #endregion  // spectral binning
+                        #region calibration (if selected)
 
-                        #region subtract reference to new local arrays and copy to calibration data arrays
-
-                        switch (UIData.nLLSystemType)
-                        {
-                            case 0: // SD-OCT
-                                #region all lines
-                                Array.Clear(pfSum, 0, pfSum.Length);
-                                Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
-                                for (nAline = 0; nAline < nNumberLines; nAline++)
-                                {
-                                    Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                    pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
-                                    Buffer.BlockCopy(pfLine, 0, pfOCTData, (0 * nNumberLinesPerSet + nAline) * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                }
-                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                    pfCalibrationData[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines));
-                                break;
-                                #endregion  // all lines
-                            case 1: // PS SD-OCT
-                                #region PS SD-OCT
-                                #region parallel even
-                                Array.Clear(pfSum, 0, pfSum.Length);
-                                Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
-                                for (nAline = 0; nAline < nNumberLines; nAline += 2)
-                                {
-                                    Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                    pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
-                                    Buffer.BlockCopy(pfLine, 0, pfOCTData, (0 * nNumberLinesPerSet + (nAline >> 1)) * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                }
-                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                    pfCalibrationData[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                #endregion  // parallel even
-                                #region parallel odd
-                                Array.Clear(pfSum, 0, pfSum.Length);
-                                Buffer.BlockCopy(pfReference, 1 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
-                                for (nAline = 1; nAline < nNumberLines; nAline += 2)
-                                {
-                                    Buffer.BlockCopy(threadData.pfProcess1IMAQParallel, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                    pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
-                                    Buffer.BlockCopy(pfLine, 0, pfOCTData, (1 * nNumberLinesPerSet + (nAline >> 1)) * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                }
-                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                    pfCalibrationData[1 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                #endregion  // parallel odd
-                                #region perpendicular even
-                                Array.Clear(pfSum, 0, pfSum.Length);
-                                Buffer.BlockCopy(pfReference, 2 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
-                                for (nAline = 0; nAline < nNumberLines; nAline += 2)
-                                {
-                                    Buffer.BlockCopy(threadData.pfProcess1IMAQPerpendicular, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                    pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
-                                    Buffer.BlockCopy(pfLine, 0, pfOCTData, (2 * nNumberLinesPerSet + (nAline >> 1)) * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                }
-                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                    pfCalibrationData[2 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                #endregion  // parallel even
-                                #region perpendicular odd
-                                Array.Clear(pfSum, 0, pfSum.Length);
-                                Buffer.BlockCopy(pfReference, 3 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
-                                for (nAline = 1; nAline < nNumberLines; nAline += 2)
-                                {
-                                    Buffer.BlockCopy(threadData.pfProcess1IMAQPerpendicular, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                    pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
-                                    Buffer.BlockCopy(pfLine, 0, pfOCTData, (3 * nNumberLinesPerSet + (nAline >> 1)) * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                }
-                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                    pfCalibrationData[3 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLines >> 1));
-                                #endregion  // parallel odd
-                                break;
-                                #endregion PS SD-OCT
-                            case 2: // line field
-                                break;
-                            case 3: // OFDI
-                                #region OFDI
-                                Array.Clear(pfSum, 0, pfSum.Length);
-
-                                Buffer.BlockCopy(pfReference, 0 * nLineLength * sizeof(float), pfTemp, 0, nLineLength * sizeof(float));
-                                
-                                for (nAline = 0; nAline < nNumberLinesPerChannel; nAline++)
-                                {
-                                    Buffer.BlockCopy(threadData.pfProcess1AlazarOCT, nAline * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                    pfLine = (pfLine.Zip(pfTemp, (x, y) => x - y)).ToArray();
-                                    Buffer.BlockCopy(pfLine, 0, pfOCTData, (0 * nNumberLinesPerSet + nAline) * nLineLength * sizeof(float), nLineLength * sizeof(float));
-                                }
-                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                    pfCalibrationData[0 * nLineLength + nPoint] = pfSum[nPoint] / ((float)(nNumberLinesPerChannel));
-
-                                #region validate Process1Thread
-                                /*
-                                string strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\rawOCT.bin";
-                                FileStream fs = File.Open(strFilename, FileMode.Create);
-                                BinaryWriter binWriter = new BinaryWriter(fs);
-
-                                fs.Seek(0, SeekOrigin.Begin);
-                                for (int mPoint = 0; mPoint < threadData.pfProcess1AlazarOCT.Length; mPoint++)
-                                    binWriter.Write(threadData.pfProcess1AlazarOCT[mPoint]);
-                                fs.Close();
-
-                                strFilename = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\subtractedOCT.bin";
-                                fs = File.Open(strFilename, FileMode.Create);
-                                binWriter = new BinaryWriter(fs);
-
-                                fs.Seek(0, SeekOrigin.Begin);
-                                for (int mPoint = 0; mPoint < pfOCTData.Length; mPoint++)
-                                    binWriter.Write(pfOCTData[mPoint]);
-                                fs.Close();
-                                */
-                                #endregion validate Process1Thread
-                                break;
-                                #endregion OFDI
-                            case 4: // PS OFDI
-                                break;
-                        }   // switch (UIData.nLLSystemType
-
-                        #endregion subtract reference to new local arrays and copy to calibration data arrays
-
-                        #endregion  // read from process1 buffers, calculate and subtract reference
-
-                        threadData.rwlsProcessTo1.ExitReadLock();
-
-                        #region actual processing
-
-                        #region calculate calibration if selected
                         if (UIData.bCalibrationActive)
                         {
+
                             #region calculate mask
                             calculateMask(UIData.nCalibrationDepthLeft, UIData.nCalibrationDepthRight, UIData.nCalibrationDepthRound, ref pfCalibrationMask);
-                            #endregion  // calculate mask
+                            #endregion calculate mask
 
-                            #region get left / right phase parameters (and error check)
-                            nCalibrationPhaseLeft = UIData.nCalibrationPhaseLeft;
-                            if (nCalibrationPhaseLeft < 0)
-                                nCalibrationPhaseLeft = 0;
-                            if (nCalibrationPhaseLeft > (pfCalibrationMask.Length - 2))
-                                nCalibrationPhaseLeft = (pfCalibrationMask.Length - 2);
-
-                            nCalibrationPhaseRight = UIData.nCalibrationPhaseRight;
-                            if (nCalibrationPhaseRight < 1)
-                                nCalibrationPhaseRight = 1;
-                            if (nCalibrationPhaseRight > (pfCalibrationMask.Length - 1))
-                                nCalibrationPhaseRight = (pfCalibrationMask.Length - 1);
-
-                            if (nCalibrationPhaseLeft >= nCalibrationPhaseRight)
-                                nCalibrationPhaseRight = nCalibrationPhaseLeft + 1;
-                            #endregion get left / right phase parameters (and error check)
-                            #region calculate calibration
                             switch (threadData.nProcess1ProcessingType)
                             {
                                 case 0:  // NI
-                                    calculateCalibration(nNumberSets, pfCalibrationData, pfCalibrationMask, ref pfCalibrationDepthProfile, nCalibrationPhaseLeft, nCalibrationPhaseRight, ref pfCalibrationSpectrum, ref pfCalibrationPhase, ref pfK, ref pnIndex);
                                     break;
                                 case 1:  // IPP
-                                    #if TRUEIPP
-                                    // call ipp function
-                                    Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
-                                    #endif  // TRUEIPP
                                     break;
                                 case 2:  // CUDA
-                                    #if TRUECUDA
-                                    #region validate Process1Thread
-                                        
-                                        string strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfRawOCT.bin";
-                                        FileStream fS = File.Open(strPath, FileMode.Create);
-                                        BinaryWriter bW = new BinaryWriter(fS);
-                                        fS.Seek(0, SeekOrigin.Begin);
-                                        for (int mPoint = 0; mPoint < pfOCTData.Length; mPoint++)
-                                            bW.Write(pfOCTData[mPoint]);
-                                        fS.Close();
-                                        /*
-                                        strPath = "C:\\Users\\ONI Lab\\Desktop\\junkBinaryFiles\\pfCalibrationMask.bin";
-                                        fS = File.Open(strPath, FileMode.Create);
-                                        bW = new BinaryWriter(fS);
-                                        fS.Seek(0, SeekOrigin.Begin);
-                                        for (int mPoint = 0; mPoint < pfTemp.Length; mPoint++)
-                                            bW.Write(pfTemp[mPoint]);
-                                        fS.Close();
-                                        */
-                                    #endregion validate Process1Thread
-                                    Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
-                                    #endif  // TRUECUDA
                                     break;
-                            }  // switch (threadData.nProcess1ProcessingType
-                            #endregion  // calculate calibration
-                            #region send results to graph
-                            Buffer.BlockCopy(pfCalibrationDepthProfile, 0, UIData.pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length * sizeof(float));
-                            Buffer.BlockCopy(pfCalibrationSpectrum, 0, UIData.pfCalibrationSpectrum, 0, pfCalibrationSpectrum.Length * sizeof(float));
-                            Buffer.BlockCopy(pfCalibrationPhase, 0, UIData.pfCalibrationPhase, 0, pfCalibrationPhase.Length * sizeof(float));
-                            #endregion  // send results to graph
-                        }
-                        #endregion calculate calibration if selected
+                            }   // switch (threadData.nProcess1ProcessingType
 
-                        #region save, load, or clear calibration files if requested
-
-                        #region if load
-                        if (UIData.bCalibrationLoad)
-                        {
-                            loadCalibration(UIData.strCalibrationFile, nNumberSets, nNumberLinesPerSet, nLineLength, ref pfK, ref pnIndex);
-
-                            UIData.bCalibrationLoad = false;
-                            UIData.bCalibrationSave = false;
-                            UIData.bCalibrationClear = false;
-                        }   // if (UIData.bCalibrationLoad
-                        #endregion if load
-
-                        #region if save
-                        if (UIData.bCalibrationSave)
-                        {
-                            saveCalibration(UIData.strCalibrationFile, nNumberSets, nNumberLinesPerSet, nLineLength, pfK, pnIndex);
-
-                            UIData.bCalibrationLoad = false;
-                            UIData.bCalibrationSave = false;
-                            UIData.bCalibrationClear = false;
-                        }   // if (UIData.bCalibrationLoad
-                        #endregion if save
-
-                        #region if clear
-                        if (UIData.bCalibrationClear)
-                        {
-                            clearCalibration(nNumberSets, ref pfK, ref pnIndex);
-
-                            UIData.bCalibrationLoad = false;
-                            UIData.bCalibrationSave = false;
-                            UIData.bCalibrationClear = false;
-                        }   // if (UIData.bCalibrationLoad
-                        #endregion if clear
-
-                        #endregion save, load, or clear calibration files if requested
-
-                        #region apply calibration
-                        switch (threadData.nProcess1ProcessingType)
-                        {
-                            case 0:  // NI
-                                applyCalibration(nNumberSets, nNumberLinesPerSet, ref pfOCTData, pfK, pnIndex);
-                                // in other cases, the calibrated data stays in the dll, so just 'pfOCTData', not 'ref pfOCTData'
-                                break;
-                            case 1:  // IPP
-                                #if TRUEIPP
-                                // call ipp function
-                                Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
-                                #endif  // TRUEIPP
-                                break;
-                            case 2:  // CUDA
-                                #if TRUECUDA
-                                Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
-                                Thread.Sleep(10);
-                                #endif  // TRUECUDA
-                                break;
-                        }  // switch (threadData.nProcess1ProcessingType
-                        #endregion  // apply calibration
-
-                        #region calculate dispersion if selected
-                        if (UIData.bDispersionActive)
-                        {
-                            #region get data for dispersion compensation calculation
-                            if (UIData.nDispersionLine == -1)
-                            {
-                                #region calculate average for OCT data
-                                int nSet = 0;
-                                Array.Clear(pfSum, 0, pfSum.Length);
-                                for (nAline = 0; nAline < nNumberLinesPerSet; nAline++)
-                                {
-                                    Buffer.BlockCopy(pfOCTData, (nSet * nNumberLinesPerSet + nAline) * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
-                                    pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
-                                }   // for (nAline
-                                for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                    pfDispersionData[nPoint] = pfSum[nPoint] / ((float)nNumberLinesPerSet);
-                                #endregion calculate average for OCT data in each set
-                            }
-                            else
-                            {
-                                #region error checking on line number
-                                nAline = UIData.nDispersionLine;
-                                if (nAline < 0)
-                                    nAline = 0;
-                                if (nAline > nNumberLines - 1)
-                                    nAline = nNumberLines - 1;
-                                #endregion error checking on line number
-                                #region get line
-                                switch (UIData.nLLSystemType)
-                                {
-                                    case 0: // SD-OCT
-                                        Buffer.BlockCopy(pfOCTData, nAline * nLineLength * sizeof(float), pfDispersionData, 0, nLineLength * sizeof(float));
-                                        break;
-                                    case 1: // PS SD-OCT
-                                        int nSet = nAline % 2;
-                                        Buffer.BlockCopy(pfOCTData, (nSet * nNumberLinesPerSet + (nAline >> 1)) * nLineLength * sizeof(float), pfDispersionData, 0, nLineLength * sizeof(float));
-                                        break;
-                                    case 2: // line field
-                                        break;
-                                    case 3: // OFDI
-                                        break;
-                                    case 4: // PS OFDI
-                                        break;
-                                }   // switch (UIData.nLLSystemType
-                                #endregion get line
-                            }
-                            #endregion get data for dispersion compensation calculation
-
-                            #region calculate mask
-                            calculateMask(UIData.nDispersionDepthLeft, UIData.nDispersionDepthRight, UIData.nDispersionDepthRound, ref pfDispersionMask);
-                            #endregion  // calculate mask
-                            #region get left / right phase parameters (and error check)
-                            nDispersionPhaseLeft = UIData.nDispersionPhaseLeft;
-                            if (nDispersionPhaseLeft < 0)
-                                nDispersionPhaseLeft = 0;
-                            if (nDispersionPhaseLeft > (pfDispersionMask.Length - 2))
-                                nDispersionPhaseLeft = (pfDispersionMask.Length - 2);
-
-                            nDispersionPhaseRight = UIData.nDispersionPhaseRight;
-                            if (nDispersionPhaseRight < 1)
-                                nDispersionPhaseRight = 1;
-                            if (nDispersionPhaseRight > (pfDispersionMask.Length - 1))
-                                nDispersionPhaseRight = (pfDispersionMask.Length - 1);
-
-                            if (nDispersionPhaseLeft >= nDispersionPhaseRight)
-                                nDispersionPhaseRight = nDispersionPhaseLeft + 1;
-                            #endregion get left / right phase parameters (and error check)
-                            #region calculate Dispersion
-                            switch (threadData.nProcess1ProcessingType)
-                            {
-                                case 0:  // NI
-                                    calculateDispersion(pfDispersionData, pfFFTMask, pfDispersionMask, ref pfDispersionDepthProfile, nDispersionPhaseLeft, nDispersionPhaseRight, ref pfDispersionSpectrum, ref pfDispersionPhase, ref pfDispersionR, ref pfDispersionI);
-                                    break;
-                                case 1:  // IPP
-                                    #if TRUEIPP
-                                    // call ipp function
-                                    Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
-                                    #endif  // TRUEIPP
-                                    break;
-                                case 2:  // CUDA
-                                    #if TRUECUDA
-                                    Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
-                                    Thread.Sleep(10);
-                                    #endif  // TRUECUDA
-                                    break;
-                            }  // switch (threadData.nProcess1ProcessingType
-                            #endregion  // calculate Dispersion
-                            #region send results to graph
-                            Buffer.BlockCopy(pfDispersionDepthProfile, 0, UIData.pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length * sizeof(float));
-                            Buffer.BlockCopy(pfDispersionSpectrum, 0, UIData.pfDispersionSpectrum, 0, pfDispersionSpectrum.Length * sizeof(float));
-                            Buffer.BlockCopy(pfDispersionPhase, 0, UIData.pfDispersionPhase, 0, pfDispersionPhase.Length * sizeof(float));
-                            #endregion  // send results to graph
-                        }
-                        #endregion calculate Dispersion if selected
-
-                        #region save, load, or clear Dispersion files if requested
-
-                        #region if load
-                        if (UIData.bDispersionLoad)
-                        {
-                            loadDispersion(UIData.strDispersionFile, nLineLength, ref pfDispersionR, ref pfDispersionI);
-
-                            UIData.bDispersionLoad = false;
-                            UIData.bDispersionSave = false;
-                            UIData.bDispersionClear = false;
-                        }   // if (UIData.bDispersionLoad
-                        #endregion if load
-
-                        #region if save
-                        if (UIData.bDispersionSave)
-                        {
-                            saveDispersion(UIData.strDispersionFile, pfDispersionR, pfDispersionI);
-
-                            UIData.bDispersionLoad = false;
-                            UIData.bDispersionSave = false;
-                            UIData.bDispersionClear = false;
-                        }   // if (UIData.bDispersionLoad
-                        #endregion if save
-
-                        #region if clear
-                        if (UIData.bDispersionClear)
-                        {
-                            clearDispersion(ref pfDispersionR, ref pfDispersionI);
-
-                            UIData.bDispersionLoad = false;
-                            UIData.bDispersionSave = false;
-                            UIData.bDispersionClear = false;
-                        }   // if (UIData.bDispersionLoad
-                        #endregion if clear
-
-                        #endregion save, load, or clear Dispersion files if requested
-
-                        #region apply Dispersion
-                        switch (threadData.nProcess1ProcessingType)
-                        {
-                            case 0:  // NI
-                                applyDispersion(pfOCTData, pfDispersionR, pfDispersionI, ref pfR, ref pfI);
-                                // in other cases, the calibrated data stays in the dll, so just 'pfOCTData', not 'ref pfOCTData'
-                                break;
-                            case 1:  // IPP
-                                #if TRUEIPP
-                                // call ipp function
-                                Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
-                                #endif  // TRUEIPP
-                                break;
-                            case 2:  // CUDA
-                                #if TRUECUDA
-                                Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
-                                Thread.Sleep(10);
-                                #endif  // TRUECUDA
-                                break;
-                        }  // switch (threadData.nProcess1ProcessingType
-                        #endregion  // apply Dispersion
-
-                        #region get final results
-                        if (UIData.bFFTMaskUpdated)
-                        {
-                            #region calculate mask
-                            calculateMask(UIData.nFFTMaskLeft, UIData.nFFTMaskRight, UIData.nFFTMaskRound, ref pfFFTMask);
-                            #endregion  // calculate mask
-                        }   // if (UIData.bFFTMaskUpdated
-
-                        switch (threadData.nProcess1ProcessingType)
-                        {
-                            case 0:  // NI
-                                getComplexDepthProfile(threadData.nRawAlineLength, pfFFTMask, ref pfR, ref pfI);
-                                break;
-                            case 1:  // IPP
-                                #if TRUEIPP
-                                // call ipp function
-                                Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
-                                #endif  // TRUEIPP
-                                break;
-                            case 2:  // CUDA
-                                #if TRUECUDA
-                                Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
-                                Thread.Sleep(10);
-                                #endif  // TRUECUDA
-                                break;
-                        }  // switch (threadData.nProcess1ProcessingType
-                        #endregion  // final results
-
-                        #endregion  // actual processing
-
-                        #region launch process2
-
-                        if (threadData.rwlsProcess1To2.TryEnterWriteLock(1000))
-                        {
-
-                            #region prepare secondary processing
-
-                            Thread.Sleep(10);
-
-                            switch (threadData.nProcess2Type)
-                            {
-                                case 0:  // none
-                                    break;
-                                case 1:  // intensity
-                                    // copy results to pnProcess2 data structures
-                                    break;
-                                case 2:  // attenuation
-                                    // copy results to pnProcess2 data structures
-                                    break;
-                                case 3:  // phase
-                                    // copy results to pnProcess2 data structures
-                                    break;
-                                case 4:  // polarization
-                                    // copy results to pnProcess2 data structures
-                                    break;
-                                case 5:  // angiography
-                                    // copy results to pnProcess2 data structures
-                                    break;
-                                case 6:  // elastography
-                                    // copy results to pnProcess2 data structures
-                                    break;
-                                case 7:  // spectroscopy
-                                    // copy results to pnProcess2 data structures
-                                    break;
-                                case 8:  // spectral binning
-                                    // already taken care of previously
-                                    break;
-                            }
-
-                            #endregion  // prepare secondary processing
-
-                            threadData.rwlsProcess1To2.ExitWriteLock();
-                            threadData.mreProcess2Action.Set();
-                        }
-                        else
-                        {
-                            bTroublemaker = true;
-                            threadData.strProcess1ThreadStatus = "1 to 2 timeout!";
-                            threadData.mreProcess1Kill.Set();
-                            threadData.mreMainKill.Set();
-                        }
-
-                        #endregion launch process2
-
-                        #region send out intensity updates
-
-                        #region check for UL intensity
-
-                        if (UIData.nULDisplayIndex == 3)
-                        {
-                            #region main
-
-                            #region get preferences from UI
-
-                            bool bEven = false, bOdd = false;
-                            bool bParallel = false, bPerpendicular = false;
-                            bool[] pbCalibration = new bool[4];
-
-                            int nCalibrationLine, nLine;
-                            int nLineOffset;
-                            int nDoubler, nDoubleLines = 1;
-
-                            #region even/odd line selection
-                            switch (UIData.nULIntensityLines)
-                            {
-                                case 0:  // all lines
-                                    bEven = true;
-                                    bOdd = true;
-                                    break;
-                                case 1:  // even lines
-                                    bEven = true;
-                                    bOdd = false;
-                                    break;
-                                case 2:  // odd lines
-                                    bEven = false;
-                                    bOdd = true;
-                                    break;
-                            }   // switch (UIData.nULIntensityLines
-                            #endregion even/odd line selection
-
-                            #region camera selection
-                            switch (UIData.nULIntensityCamera)
-                            {
-                                case 0:  // both cameras
-                                    bParallel = true;
-                                    bPerpendicular = true;
-                                    break;
-                                case 1:  // parallel
-                                    bParallel = true;
-                                    bPerpendicular = false;
-                                    break;
-                                case 2:  // perpendicular
-                                    bParallel = false;
-                                    bPerpendicular = true;
-                                    break;
-                            }   // switch (UIData.nULIntensityCamera
-                            #endregion camera selection
-
-                            #region combine selections
-
-                            if (UIData.nLLSystemType == 1)  // if PS-OCT
-                            {
-                                pbCalibration[0] = bEven && bParallel;
-                                pbCalibration[1] = bOdd && bParallel;
-                                pbCalibration[2] = bEven && bPerpendicular;
-                                pbCalibration[3] = bOdd && bPerpendicular;
-                                nDoubleLines = 2;
-                            }
-                            else  // if (UIData.nLLSystemType
-                            {
-                                pbCalibration[0] = true;
-                                pbCalibration[1] = false;
-                                pbCalibration[2] = false;
-                                pbCalibration[3] = false;
-                                nDoubleLines = 1;
-                            }  // if (UIData.nLLSystemType
-
-                            #endregion combine selections
-
-                            #endregion get preferences from UI
-
-                            Array.Clear(pfIntensity, 0, pfIntensity.Length);
-
-                            for (nLine=0; nLine<nNumberLinesPerSet; nLine++)
-                            {
-                                Array.Clear(pfLine, 0, pfLine.Length);
-                                for (nCalibrationLine=0; nCalibrationLine < nNumberSets; nCalibrationLine++)
-                                {
-                                    if (pbCalibration[nCalibrationLine])
-                                    {
-                                        nLineOffset = (nCalibrationLine * nNumberLinesPerSet + nLine) * nLineLength;
-                                        for (nPoint = 0; nPoint < nLineLength; nPoint++)
-                                            pfLine[nPoint] += pfR[nLineOffset + nPoint] * pfR[nLineOffset + nPoint] + pfI[nLineOffset + nPoint] * pfI[nLineOffset + nPoint];
-                                    }   // if (pbCalibrationLine
-                                }   // for (nCalibrationLine
-                                for (nPoint = 0; nPoint < nLineLength >> 1; nPoint++)
-                                {
-                                    for (nDoubler = 0; nDoubler < nDoubleLines; nDoubler++)
-                                    {
-                                        UIData.pfULImage[nDoubleLines * nLine + nDoubler, 2 * nPoint + 0] = (float)(10.0 * Math.Log10(pfLine[nPoint]));
-                                        UIData.pfULImage[nDoubleLines * nLine + nDoubler, 2 * nPoint + 1] = UIData.pfULImage[nLine, 2 * nPoint + 0];
-                                    }   // for (nDoubler
-                                }
-                            }   // for (nLine
-
-                            #endregion main
-
-                            #region left
-                            nAline = UIData.nULLeft;
-                            if (nAline < 0) nAline = 0;
-                            if (nAline >= threadData.nRawNumberAlines) nAline = threadData.nRawNumberAlines - 1;
-                            for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
-                                UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
-                            #endregion
-
-                            #region top
-                            nPoint = UIData.nULTop;
-                            if (nPoint < 0) nPoint = 0;
-                            if (nPoint >= threadData.nRawAlineLength) nPoint = threadData.nRawAlineLength - 1;
-                            for (nAline = 0; nAline < threadData.nRawNumberAlines; nAline++)
-                                UIData.pfULTop[0, nAline] = UIData.pfULImage[nAline, nPoint];
-                            #endregion
-                        }
-                        #endregion check for UL intensity
+                        }   // if (UIData.bCalibrationActive
 
 
-                        // calculate intensity images as requested
+                        #endregion calibration (if selected)
 
-                        #endregion  // send out intensity updates
+
+
+
+
+
+                        //#region actual processing
+
+                        ////#region calculate calibration if selected
+                        ////if (UIData.bCalibrationActive)
+                        ////{
+                        ////    #region get left / right phase parameters (and error check)
+                        ////    nCalibrationPhaseLeft = UIData.nCalibrationPhaseLeft;
+                        ////    if (nCalibrationPhaseLeft < 0)
+                        ////        nCalibrationPhaseLeft = 0;
+                        ////    if (nCalibrationPhaseLeft > (pfCalibrationMask.Length - 2))
+                        ////        nCalibrationPhaseLeft = (pfCalibrationMask.Length - 2);
+
+                        ////    nCalibrationPhaseRight = UIData.nCalibrationPhaseRight;
+                        ////    if (nCalibrationPhaseRight < 1)
+                        ////        nCalibrationPhaseRight = 1;
+                        ////    if (nCalibrationPhaseRight > (pfCalibrationMask.Length - 1))
+                        ////        nCalibrationPhaseRight = (pfCalibrationMask.Length - 1);
+
+                        ////    if (nCalibrationPhaseLeft >= nCalibrationPhaseRight)
+                        ////        nCalibrationPhaseRight = nCalibrationPhaseLeft + 1;
+                        ////    #endregion get left / right phase parameters (and error check)
+                        ////    #region calculate calibration
+                        ////    switch (threadData.nProcess1ProcessingType)
+                        ////    {
+                        ////        case 0:  // NI
+                        ////            calculateCalibration(nNumberSets, pfCalibrationData, pfCalibrationMask, ref pfCalibrationDepthProfile, nCalibrationPhaseLeft, nCalibrationPhaseRight, ref pfCalibrationSpectrum, ref pfCalibrationPhase, ref pfK, ref pnIndex);
+                        ////            break;
+                        ////        case 1:  // IPP
+                        ////            #if TRUEIPP
+                        ////            // call ipp function
+                        ////            Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
+                        ////            #endif  // TRUEIPP
+                        ////            break;
+                        ////        case 2:  // CUDA
+                        ////            #if TRUECUDA
+                        ////            Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
+                        ////            #endif  // TRUECUDA
+                        ////            break;
+                        ////    }  // switch (threadData.nProcess1ProcessingType
+                        ////    #endregion  // calculate calibration
+                        ////    #region send results to graph
+                        ////    Buffer.BlockCopy(pfCalibrationDepthProfile, 0, UIData.pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length * sizeof(float));
+                        ////    Buffer.BlockCopy(pfCalibrationSpectrum, 0, UIData.pfCalibrationSpectrum, 0, pfCalibrationSpectrum.Length * sizeof(float));
+                        ////    Buffer.BlockCopy(pfCalibrationPhase, 0, UIData.pfCalibrationPhase, 0, pfCalibrationPhase.Length * sizeof(float));
+                        ////    #endregion  // send results to graph
+                        ////}
+                        ////#endregion calculate calibration if selected
+
+                        ////#region save, load, or clear calibration files if requested
+
+                        ////#region if load
+                        ////if (UIData.bCalibrationLoad)
+                        ////{
+                        ////    loadCalibration(UIData.strCalibrationFile, nNumberSets, nNumberLinesPerSet, nLineLength, ref pfK, ref pnIndex);
+
+                        ////    UIData.bCalibrationLoad = false;
+                        ////    UIData.bCalibrationSave = false;
+                        ////    UIData.bCalibrationClear = false;
+                        ////}   // if (UIData.bCalibrationLoad
+                        ////#endregion if load
+
+                        ////#region if save
+                        ////if (UIData.bCalibrationSave)
+                        ////{
+                        ////    saveCalibration(UIData.strCalibrationFile, nNumberSets, nNumberLinesPerSet, nLineLength, pfK, pnIndex);
+
+                        ////    UIData.bCalibrationLoad = false;
+                        ////    UIData.bCalibrationSave = false;
+                        ////    UIData.bCalibrationClear = false;
+                        ////}   // if (UIData.bCalibrationLoad
+                        ////#endregion if save
+
+                        ////#region if clear
+                        ////if (UIData.bCalibrationClear)
+                        ////{
+                        ////    clearCalibration(nNumberSets, ref pfK, ref pnIndex);
+
+                        ////    UIData.bCalibrationLoad = false;
+                        ////    UIData.bCalibrationSave = false;
+                        ////    UIData.bCalibrationClear = false;
+                        ////}   // if (UIData.bCalibrationLoad
+                        ////#endregion if clear
+
+                        ////#endregion save, load, or clear calibration files if requested
+
+                        ////#region apply calibration
+                        ////switch (threadData.nProcess1ProcessingType)
+                        ////{
+                        ////    case 0:  // NI
+                        ////        applyCalibration(nNumberSets, nNumberLinesPerSet, ref pfOCTData, pfK, pnIndex);
+                        ////        // in other cases, the calibrated data stays in the dll, so just 'pfOCTData', not 'ref pfOCTData'
+                        ////        break;
+                        ////    case 1:  // IPP
+                        ////        #if TRUEIPP
+                        ////        // call ipp function
+                        ////        Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
+                        ////        #endif  // TRUEIPP
+                        ////        break;
+                        ////    case 2:  // CUDA
+                        ////        #if TRUECUDA
+                        ////        Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
+                        ////        #endif  // TRUECUDA
+                        ////        break;
+                        ////}  // switch (threadData.nProcess1ProcessingType
+                        ////#endregion  // apply calibration
+
+                        ////#region calculate dispersion if selected
+                        ////if (UIData.bDispersionActive)
+                        ////{
+                        ////    #region get data for dispersion compensation calculation
+                        ////    if (UIData.nDispersionLine == -1)
+                        ////    {
+                        ////        #region calculate average for OCT data
+                        ////        int nSet = 0;
+                        ////        Array.Clear(pfSum, 0, pfSum.Length);
+                        ////        for (nAline = 0; nAline < nNumberLinesPerSet; nAline++)
+                        ////        {
+                        ////            Buffer.BlockCopy(pfOCTData, (nSet * nNumberLinesPerSet + nAline) * nLineLength * sizeof(float), pfLine, 0, nLineLength * sizeof(float));
+                        ////            pfSum = (pfSum.Zip(pfLine, (x, y) => x + y)).ToArray();
+                        ////        }   // for (nAline
+                        ////        for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                        ////            pfDispersionData[nPoint] = pfSum[nPoint] / ((float)nNumberLinesPerSet);
+                        ////        #endregion calculate average for OCT data in each set
+                        ////    }
+                        ////    else
+                        ////    {
+                        ////        #region error checking on line number
+                        ////        nAline = UIData.nDispersionLine;
+                        ////        if (nAline < 0)
+                        ////            nAline = 0;
+                        ////        if (nAline > nNumberLines - 1)
+                        ////            nAline = nNumberLines - 1;
+                        ////        #endregion error checking on line number
+                        ////        #region get line
+                        ////        switch (UIData.nLLSystemType)
+                        ////        {
+                        ////            case 0: // SD-OCT
+                        ////                Buffer.BlockCopy(pfOCTData, nAline * nLineLength * sizeof(float), pfDispersionData, 0, nLineLength * sizeof(float));
+                        ////                break;
+                        ////            case 1: // PS SD-OCT
+                        ////                int nSet = nAline % 2;
+                        ////                Buffer.BlockCopy(pfOCTData, (nSet * nNumberLinesPerSet + (nAline >> 1)) * nLineLength * sizeof(float), pfDispersionData, 0, nLineLength * sizeof(float));
+                        ////                break;
+                        ////            case 2: // line field
+                        ////                break;
+                        ////            case 3: // OFDI
+                        ////                break;
+                        ////            case 4: // PS OFDI
+                        ////                break;
+                        ////        }   // switch (UIData.nLLSystemType
+                        ////        #endregion get line
+                        ////    }
+                        ////    #endregion get data for dispersion compensation calculation
+
+                        ////    #region calculate mask
+                        ////    calculateMask(UIData.nDispersionDepthLeft, UIData.nDispersionDepthRight, UIData.nDispersionDepthRound, ref pfDispersionMask);
+                        ////    #endregion  // calculate mask
+                        ////    #region get left / right phase parameters (and error check)
+                        ////    nDispersionPhaseLeft = UIData.nDispersionPhaseLeft;
+                        ////    if (nDispersionPhaseLeft < 0)
+                        ////        nDispersionPhaseLeft = 0;
+                        ////    if (nDispersionPhaseLeft > (pfDispersionMask.Length - 2))
+                        ////        nDispersionPhaseLeft = (pfDispersionMask.Length - 2);
+
+                        ////    nDispersionPhaseRight = UIData.nDispersionPhaseRight;
+                        ////    if (nDispersionPhaseRight < 1)
+                        ////        nDispersionPhaseRight = 1;
+                        ////    if (nDispersionPhaseRight > (pfDispersionMask.Length - 1))
+                        ////        nDispersionPhaseRight = (pfDispersionMask.Length - 1);
+
+                        ////    if (nDispersionPhaseLeft >= nDispersionPhaseRight)
+                        ////        nDispersionPhaseRight = nDispersionPhaseLeft + 1;
+                        ////    #endregion get left / right phase parameters (and error check)
+                        ////    #region calculate Dispersion
+                        ////    switch (threadData.nProcess1ProcessingType)
+                        ////    {
+                        ////        case 0:  // NI
+                        ////            calculateDispersion(pfDispersionData, pfFFTMask, pfDispersionMask, ref pfDispersionDepthProfile, nDispersionPhaseLeft, nDispersionPhaseRight, ref pfDispersionSpectrum, ref pfDispersionPhase, ref pfDispersionR, ref pfDispersionI);
+                        ////            break;
+                        ////        case 1:  // IPP
+                        ////            #if TRUEIPP
+                        ////            // call ipp function
+                        ////            Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
+                        ////            #endif  // TRUEIPP
+                        ////            break;
+                        ////        case 2:  // CUDA
+                        ////            #if TRUECUDA
+                        ////            Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
+                        ////            #endif  // TRUECUDA
+                        ////            break;
+                        ////    }  // switch (threadData.nProcess1ProcessingType
+                        ////    #endregion  // calculate Dispersion
+                        ////    #region send results to graph
+                        ////    Buffer.BlockCopy(pfDispersionDepthProfile, 0, UIData.pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length * sizeof(float));
+                        ////    Buffer.BlockCopy(pfDispersionSpectrum, 0, UIData.pfDispersionSpectrum, 0, pfDispersionSpectrum.Length * sizeof(float));
+                        ////    Buffer.BlockCopy(pfDispersionPhase, 0, UIData.pfDispersionPhase, 0, pfDispersionPhase.Length * sizeof(float));
+                        ////    #endregion  // send results to graph
+                        ////}
+                        ////#endregion calculate Dispersion if selected
+
+                        ////#region save, load, or clear Dispersion files if requested
+
+                        ////#region if load
+                        ////if (UIData.bDispersionLoad)
+                        ////{
+                        ////    loadDispersion(UIData.strDispersionFile, nLineLength, ref pfDispersionR, ref pfDispersionI);
+
+                        ////    UIData.bDispersionLoad = false;
+                        ////    UIData.bDispersionSave = false;
+                        ////    UIData.bDispersionClear = false;
+                        ////}   // if (UIData.bDispersionLoad
+                        ////#endregion if load
+
+                        ////#region if save
+                        ////if (UIData.bDispersionSave)
+                        ////{
+                        ////    saveDispersion(UIData.strDispersionFile, pfDispersionR, pfDispersionI);
+
+                        ////    UIData.bDispersionLoad = false;
+                        ////    UIData.bDispersionSave = false;
+                        ////    UIData.bDispersionClear = false;
+                        ////}   // if (UIData.bDispersionLoad
+                        ////#endregion if save
+
+                        ////#region if clear
+                        ////if (UIData.bDispersionClear)
+                        ////{
+                        ////    clearDispersion(ref pfDispersionR, ref pfDispersionI);
+
+                        ////    UIData.bDispersionLoad = false;
+                        ////    UIData.bDispersionSave = false;
+                        ////    UIData.bDispersionClear = false;
+                        ////}   // if (UIData.bDispersionLoad
+                        ////#endregion if clear
+
+                        ////#endregion save, load, or clear Dispersion files if requested
+
+                        ////#region apply Dispersion
+                        ////switch (threadData.nProcess1ProcessingType)
+                        ////{
+                        ////    case 0:  // NI
+                        ////        applyDispersion(pfOCTData, pfDispersionR, pfDispersionI, ref pfR, ref pfI);
+                        ////        // in other cases, the calibrated data stays in the dll, so just 'pfOCTData', not 'ref pfOCTData'
+                        ////        break;
+                        ////    case 1:  // IPP
+                        ////        #if TRUEIPP
+                        ////        // call ipp function
+                        ////        Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
+                        ////        #endif  // TRUEIPP
+                        ////        break;
+                        ////    case 2:  // CUDA
+                        ////        #if TRUECUDA
+                        ////        Array.Clear(pfDispersionDepthProfile, 0, pfDispersionDepthProfile.Length);
+                        ////        #endif  // TRUECUDA
+                        ////        break;
+                        ////}  // switch (threadData.nProcess1ProcessingType
+                        ////#endregion  // apply Dispersion
+
+                        ////#region get final results
+                        ////if (UIData.bFFTMaskUpdated)
+                        ////{
+                        ////    #region calculate mask
+                        ////    calculateMask(UIData.nFFTMaskLeft, UIData.nFFTMaskRight, UIData.nFFTMaskRound, ref pfFFTMask);
+                        ////    #endregion  // calculate mask
+                        ////}   // if (UIData.bFFTMaskUpdated
+
+                        ////switch (threadData.nProcess1ProcessingType)
+                        ////{
+                        ////    case 0:  // NI
+                        ////        getComplexDepthProfile(threadData.nRawAlineLength, pfFFTMask, ref pfR, ref pfI);
+                        ////        break;
+                        ////    case 1:  // IPP
+                        ////        #if TRUEIPP
+                        ////        // call ipp function
+                        ////        Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
+                        ////        #endif  // TRUEIPP
+                        ////        break;
+                        ////    case 2:  // CUDA
+                        ////        #if TRUECUDA
+                        ////        Array.Clear(pfCalibrationDepthProfile, 0, pfCalibrationDepthProfile.Length);
+                        ////        #endif  // TRUECUDA
+                        ////        break;
+                        ////}  // switch (threadData.nProcess1ProcessingType
+                        ////#endregion  // final results
+
+                        //#endregion  // actual processing
+
+                        //#region launch process2
+
+                        //if (threadData.rwlsProcess1To2.TryEnterWriteLock(1000))
+                        //{
+
+                        //    #region prepare secondary processing
+
+
+                        //    switch (threadData.nProcess2Type)
+                        //    {
+                        //        case 0:  // none
+                        //            break;
+                        //        case 1:  // intensity
+                        //            // copy results to pnProcess2 data structures
+                        //            break;
+                        //        case 2:  // attenuation
+                        //            // copy results to pnProcess2 data structures
+                        //            break;
+                        //        case 3:  // phase
+                        //            // copy results to pnProcess2 data structures
+                        //            break;
+                        //        case 4:  // polarization
+                        //            // copy results to pnProcess2 data structures
+                        //            break;
+                        //        case 5:  // angiography
+                        //            // copy results to pnProcess2 data structures
+                        //            break;
+                        //        case 6:  // elastography
+                        //            // copy results to pnProcess2 data structures
+                        //            break;
+                        //        case 7:  // spectroscopy
+                        //            // copy results to pnProcess2 data structures
+                        //            break;
+                        //        case 8:  // spectral binning
+                        //            // already taken care of previously
+                        //            break;
+                        //    }
+
+                        //    #endregion  // prepare secondary processing
+
+                        //    threadData.rwlsProcess1To2.ExitWriteLock();
+                        //    threadData.mreProcess2Action.Set();
+                        //}
+                        //else
+                        //{
+                        //    bTroublemaker = true;
+                        //    threadData.strProcess1ThreadStatus = "1 to 2 timeout!";
+                        //    threadData.mreProcess1Kill.Set();
+                        //    threadData.mreMainKill.Set();
+                        //}
+
+                        //#endregion launch process2
+
+                        //#region send out intensity updates
+
+                        ////#region check for UL intensity
+
+                        ////if (UIData.nULDisplayIndex == 3)
+                        ////{
+                        ////    #region main
+
+                        ////    #region get preferences from UI
+
+                        ////    bool bEven = false, bOdd = false;
+                        ////    bool bParallel = false, bPerpendicular = false;
+                        ////    bool[] pbCalibration = new bool[4];
+
+                        ////    int nCalibrationLine, nLine;
+                        ////    int nLineOffset;
+                        ////    int nDoubler, nDoubleLines = 1;
+
+                        ////    #region even/odd line selection
+                        ////    switch (UIData.nULIntensityLines)
+                        ////    {
+                        ////        case 0:  // all lines
+                        ////            bEven = true;
+                        ////            bOdd = true;
+                        ////            break;
+                        ////        case 1:  // even lines
+                        ////            bEven = true;
+                        ////            bOdd = false;
+                        ////            break;
+                        ////        case 2:  // odd lines
+                        ////            bEven = false;
+                        ////            bOdd = true;
+                        ////            break;
+                        ////    }   // switch (UIData.nULIntensityLines
+                        ////    #endregion even/odd line selection
+
+                        ////    #region camera selection
+                        ////    switch (UIData.nULIntensityCamera)
+                        ////    {
+                        ////        case 0:  // both cameras
+                        ////            bParallel = true;
+                        ////            bPerpendicular = true;
+                        ////            break;
+                        ////        case 1:  // parallel
+                        ////            bParallel = true;
+                        ////            bPerpendicular = false;
+                        ////            break;
+                        ////        case 2:  // perpendicular
+                        ////            bParallel = false;
+                        ////            bPerpendicular = true;
+                        ////            break;
+                        ////    }   // switch (UIData.nULIntensityCamera
+                        ////    #endregion camera selection
+
+                        ////    #region combine selections
+
+                        ////    if (UIData.nLLSystemType == 1)  // if PS-OCT
+                        ////    {
+                        ////        pbCalibration[0] = bEven && bParallel;
+                        ////        pbCalibration[1] = bOdd && bParallel;
+                        ////        pbCalibration[2] = bEven && bPerpendicular;
+                        ////        pbCalibration[3] = bOdd && bPerpendicular;
+                        ////        nDoubleLines = 2;
+                        ////    }
+                        ////    else  // if (UIData.nLLSystemType
+                        ////    {
+                        ////        pbCalibration[0] = true;
+                        ////        pbCalibration[1] = false;
+                        ////        pbCalibration[2] = false;
+                        ////        pbCalibration[3] = false;
+                        ////        nDoubleLines = 1;
+                        ////    }  // if (UIData.nLLSystemType
+
+                        ////    #endregion combine selections
+
+                        ////    #endregion get preferences from UI
+
+                        ////    Array.Clear(pfIntensity, 0, pfIntensity.Length);
+
+                        ////    for (nLine=0; nLine<nNumberLinesPerSet; nLine++)
+                        ////    {
+                        ////        Array.Clear(pfLine, 0, pfLine.Length);
+                        ////        for (nCalibrationLine=0; nCalibrationLine < nNumberSets; nCalibrationLine++)
+                        ////        {
+                        ////            if (pbCalibration[nCalibrationLine])
+                        ////            {
+                        ////                nLineOffset = (nCalibrationLine * nNumberLinesPerSet + nLine) * nLineLength;
+                        ////                for (nPoint = 0; nPoint < nLineLength; nPoint++)
+                        ////                    pfLine[nPoint] += pfR[nLineOffset + nPoint] * pfR[nLineOffset + nPoint] + pfI[nLineOffset + nPoint] * pfI[nLineOffset + nPoint];
+                        ////            }   // if (pbCalibrationLine
+                        ////        }   // for (nCalibrationLine
+                        ////        for (nPoint = 0; nPoint < nLineLength >> 1; nPoint++)
+                        ////        {
+                        ////            for (nDoubler = 0; nDoubler < nDoubleLines; nDoubler++)
+                        ////            {
+                        ////                UIData.pfULImage[nDoubleLines * nLine + nDoubler, 2 * nPoint + 0] = (float)(10.0 * Math.Log10(pfLine[nPoint]));
+                        ////                UIData.pfULImage[nDoubleLines * nLine + nDoubler, 2 * nPoint + 1] = UIData.pfULImage[nLine, 2 * nPoint + 0];
+                        ////            }   // for (nDoubler
+                        ////        }
+                        ////    }   // for (nLine
+
+                        ////    #endregion main
+
+                        ////    #region left
+                        ////    nAline = UIData.nULLeft;
+                        ////    if (nAline < 0) nAline = 0;
+                        ////    if (nAline >= threadData.nRawNumberAlines) nAline = threadData.nRawNumberAlines - 1;
+                        ////    for (nPoint = 0; nPoint < threadData.nRawAlineLength; nPoint++)
+                        ////        UIData.pfULLeft[0, nPoint] = UIData.pfULImage[nAline, nPoint];
+                        ////    #endregion
+
+                        ////    #region top
+                        ////    nPoint = UIData.nULTop;
+                        ////    if (nPoint < 0) nPoint = 0;
+                        ////    if (nPoint >= threadData.nRawAlineLength) nPoint = threadData.nRawAlineLength - 1;
+                        ////    for (nAline = 0; nAline < threadData.nRawNumberAlines; nAline++)
+                        ////        UIData.pfULTop[0, nAline] = UIData.pfULImage[nAline, nPoint];
+                        ////    #endregion
+                        ////}
+                        ////#endregion check for UL intensity
+
+                        ////#region check for UR intensity
+
+                        ////if (UIData.nURDisplayIndex == 1)
+                        ////{
+                        ////    #region main
+
+                        ////    #region get preferences from UI
+
+                        ////    bool bEven = false, bOdd = false;
+                        ////    bool bParallel = false, bPerpendicURar = false;
+                        ////    bool[] pbCalibration = new bool[4];
+
+                        ////    int nCalibrationLine, nLine;
+                        ////    int nLineOffset;
+                        ////    int nDoubler, nDoubleLines = 1;
+
+                        ////    #region even/odd line selection
+                        ////    switch (UIData.nURIntensityLines)
+                        ////    {
+                        ////        case 0:  // all lines
+                        ////            bEven = true;
+                        ////            bOdd = true;
+                        ////            break;
+                        ////        case 1:  // even lines
+                        ////            bEven = true;
+                        ////            bOdd = false;
+                        ////            break;
+                        ////        case 2:  // odd lines
+                        ////            bEven = false;
+                        ////            bOdd = true;
+                        ////            break;
+                        ////    }   // switch (UIData.nURIntensityLines
+                        ////    #endregion even/odd line selection
+
+                        ////    #region camera selection
+                        ////    switch (UIData.nURIntensityCamera)
+                        ////    {
+                        ////        case 0:  // both cameras
+                        ////            bParallel = true;
+                        ////            bPerpendicURar = true;
+                        ////            break;
+                        ////        case 1:  // parallel
+                        ////            bParallel = true;
+                        ////            bPerpendicURar = false;
+                        ////            break;
+                        ////        case 2:  // perpendicURar
+                        ////            bParallel = false;
+                        ////            bPerpendicURar = true;
+                        ////            break;
+                        ////    }   // switch (UIData.nURIntensityCamera
+                        ////    #endregion camera selection
+
+                        ////    #region combine selections
+
+                        ////    if (UIData.nLLSystemType == 1)  // if PS-OCT
+                        ////    {
+                        ////        pbCalibration[0] = bEven && bParallel;
+                        ////        pbCalibration[1] = bOdd && bParallel;
+                        ////        pbCalibration[2] = bEven && bPerpendicURar;
+                        ////        pbCalibration[3] = bOdd && bPerpendicURar;
+                        ////        nDoubleLines = 2;
+                        ////    }
+                        ////    else  // if (UIData.nLLSystemType
+                        ////    {
+                        ////        pbCalibration[0] = true;
+                        ////        pbCalibration[1] = false;
+                        ////        pbCalibration[2] = false;
+                        ////        pbCalibration[3] = false;
+                        ////        nDoubleLines = 1;
+                        ////    }  // if (UIData.nLLSystemType
+
+                        ////    #endregion combine selections
+
+                        ////    #endregion get preferences from UI
+
+                        ////    Array.Clear(pfIntensity, 0, pfIntensity.Length);
+
+                        ////    for (nLine = 0; nLine < nNumberLinesPerSet; nLine++)
+                        ////    {
+                        ////        Array.Clear(pfLine, 0, pfLine.Length);
+                        ////        for (nCalibrationLine = 0; nCalibrationLine < nNumberSets; nCalibrationLine++)
+                        ////        {
+                        ////            if (pbCalibration[nCalibrationLine])
+                        ////            {
+                        ////                nLineOffset = (nCalibrationLine * nNumberLinesPerSet + nLine) * nLineLength;
+                        ////                for (nPoint = 0; nPoint < nLineLength >> 1; nPoint++)
+                        ////                    pfLine[nPoint] += pfR[nLineOffset + nPoint] * pfR[nLineOffset + nPoint] + pfI[nLineOffset + nPoint] * pfI[nLineOffset + nPoint];
+                        ////            }   // if (pbCalibrationLine
+                        ////        }   // for (nCalibrationLine
+                        ////        for (nPoint = 0; nPoint < nLineLength >> 1; nPoint++)
+                        ////        {
+                        ////            for (nDoubler = 0; nDoubler < nDoubleLines; nDoubler++)
+                        ////                UIData.pfURImage[nDoubleLines * nLine + nDoubler, nPoint] = (float)(10.0 * Math.Log10(pfLine[nPoint]));
+                        ////        }
+                        ////    }   // for (nLine
+
+                        ////    #endregion main
+
+                        ////    #region left
+                        ////    nAline = UIData.nURLeft;
+                        ////    if (nAline < 0) nAline = 0;
+                        ////    if (nAline >= threadData.nRawNumberAlines) nAline = threadData.nRawNumberAlines - 1;
+                        ////    for (nPoint = 0; nPoint < threadData.nRawAlineLength >> 1; nPoint++)
+                        ////        UIData.pfURLeft[0, nPoint] = UIData.pfURImage[nAline, nPoint];
+                        ////    #endregion
+
+                        ////    #region top
+                        ////    nPoint = UIData.nURTop;
+                        ////    if (nPoint < 0) nPoint = 0;
+                        ////    if (nPoint >= threadData.nRawAlineLength >> 1) nPoint = (threadData.nRawAlineLength >> 1) - 1;
+                        ////    for (nAline = 0; nAline < threadData.nRawNumberAlines; nAline++)
+                        ////        UIData.pfURTop[0, nAline] = UIData.pfURImage[nAline, nPoint];
+                        ////    #endregion
+                        ////}
+                        ////#endregion check for UR intensity
+
+                        //#endregion  // send out intensity updates
 
                         threadData.strProcess1ThreadStatus = "done!";
                     }
@@ -4944,175 +4703,170 @@ namespace nOCT
             #endregion
         }
 
+
         void Process2Thread()
         {
             #region initializing
-                        threadData.strProcess2ThreadStatus = "Initializing...";
+            threadData.strProcess2ThreadStatus = "Initializing...";
 
-                        // initialization
-                        bool bTroublemaker = false;
+            // initialization
+            bool bTroublemaker = false;
 
-                        int nProcess2Type;
+            int nProcess2Type;
 
-                        int nAline, nPoint;
+            int nAline, nPoint;
 
-                        // set up wait handles to start
-                        WaitHandle[] pweStart = new WaitHandle[2];
-                        pweStart[0] = threadData.mreProcess2Kill;
-                        pweStart[1] = threadData.mreProcess2Run;
+            // set up wait handles to start
+            WaitHandle[] pweStart = new WaitHandle[2];
+            pweStart[0] = threadData.mreProcess2Kill;
+            pweStart[1] = threadData.mreProcess2Run;
 
-                        WaitHandle[] pweLoop = new WaitHandle[2];
-                        pweLoop[0] = threadData.mreProcess2Kill;
-                        pweLoop[1] = threadData.mreProcess2Action;
+            WaitHandle[] pweLoop = new WaitHandle[2];
+            pweLoop[0] = threadData.mreProcess2Kill;
+            pweLoop[1] = threadData.mreProcess2Action;
 
-                        // initialization complete
-                        threadData.mreProcess2Ready.Set();
-                        threadData.strProcess2ThreadStatus = "Ready!";
+            // initialization complete
+            threadData.mreProcess2Ready.Set();
+            threadData.strProcess2ThreadStatus = "Ready!";
             #endregion
 
             #region main loop
-                        threadData.strProcess2ThreadStatus = "Set...";
-                        if (WaitHandle.WaitAny(pweStart) == 1)
+            threadData.strProcess2ThreadStatus = "Set...";
+            if (WaitHandle.WaitAny(pweStart) == 1)
+            {
+                threadData.strProcess2ThreadStatus = "GO!";
+
+                while (WaitHandle.WaitAny(pweLoop) != 0)
+                {
+                    threadData.mreProcess2Action.Reset();
+                    threadData.strProcess2ThreadStatus = "try read lock!";
+                    if (threadData.rwlsProcess1To2.TryEnterReadLock(1000))
+                    {
+                        threadData.strProcess2ThreadStatus = "working...";
+                        threadData.nProcess2Node = threadData.nProcess1Node;
+                        nProcess2Type = threadData.nProcess2Type;
+
+                        switch (nProcess2Type)
                         {
-                            threadData.strProcess2ThreadStatus = "GO!";
+                            case 0:
+                                threadData.strProcess2ThreadStatus = "...none...";
+                                break;
+                            case 1:
+                                threadData.strProcess2ThreadStatus = "...intensity...";
+                                break;
+                            case 2:
+                                threadData.strProcess2ThreadStatus = "...attenuation...";
+                                break;
+                            case 3:
+                                threadData.strProcess2ThreadStatus = "...phase...";
+                                break;
+                            case 4:
+                                threadData.strProcess2ThreadStatus = "...polarization...";
+                                break;
+                            case 5:
+                                threadData.strProcess2ThreadStatus = "...angiography...";
+                                break;
+                            case 6:
+                                threadData.strProcess2ThreadStatus = "...elastography...";
+                                break;
+                            case 7:
+                                threadData.strProcess2ThreadStatus = "...spectroscopy...";
+                                break;
+                            case 8:
+                                threadData.strProcess2ThreadStatus = "...spectral binning...";
+                                break;
+                        }   // switch (nProcess2Type
 
-                            while (WaitHandle.WaitAny(pweLoop) != 0)
-                            {
-                                threadData.mreProcess2Action.Reset();
-                                threadData.strProcess2ThreadStatus = "try read lock!";
-                                if (threadData.rwlsProcess1To2.TryEnterReadLock(1000))
-                                {
-                                    threadData.strProcess2ThreadStatus = "working...";
-                                    threadData.nProcess2Node = threadData.nProcess1Node;
-                                    nProcess2Type = threadData.nProcess2Type;
+                        threadData.rwlsProcess1To2.ExitReadLock();
 
-                                    switch (nProcess2Type)
-                                    {
-                                        case 0:
-                                            threadData.strProcess2ThreadStatus = "...none...";
-                                            break;
-                                        case 1:
-                                            threadData.strProcess2ThreadStatus = "...intensity...";
-                                            break;
-                                        case 2:
-                                            threadData.strProcess2ThreadStatus = "...attenuation...";
-                                            break;
-                                        case 3:
-                                            threadData.strProcess2ThreadStatus = "...phase...";
-                                            break;
-                                        case 4:
-                                            threadData.strProcess2ThreadStatus = "...polarization...";
-                                            break;
-                                        case 5:
-                                            threadData.strProcess2ThreadStatus = "...angiography...";
-                                            break;
-                                        case 6:
-                                            threadData.strProcess2ThreadStatus = "...elastography...";
-                                            break;
-                                        case 7:
-                                            threadData.strProcess2ThreadStatus = "...spectroscopy...";
-                                            break;
-                                        case 8:
-                                            threadData.strProcess2ThreadStatus = "...spectral binning...";
+                        switch (nProcess2Type)
+                        {
+                            case 0:
+                                threadData.strProcess2ThreadStatus = "...none...";
+                                break;
+                            case 1:
+                                threadData.strProcess2ThreadStatus = "...intensity...";
+                                break;
+                            case 2:
+                                threadData.strProcess2ThreadStatus = "...attenuation...";
+                                break;
+                            case 3:
+                                threadData.strProcess2ThreadStatus = "...phase...";
+                                break;
+                            case 4:
+                                threadData.strProcess2ThreadStatus = "...polarization...";
+                                break;
+                            case 5:
+                                threadData.strProcess2ThreadStatus = "...angiography...";
+                                break;
+                            case 6:
+                                threadData.strProcess2ThreadStatus = "...elastography...";
+                                break;
+                            case 7:
+                                threadData.strProcess2ThreadStatus = "...spectroscopy...";
+                                break;
+                            case 8:
+                                threadData.strProcess2ThreadStatus = "...spectral binning...";
 
-                                            // call to ipp thread for spectral binning
-                                            Thread.Sleep(500);
+                                // copy data to upper right data structures
+                                // URImage
+                                //for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
+                                //    for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
+                                //        UIData.pfURImage[nAline, nPoint] = (float)(Math.Sqrt(threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] + threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint]));
+                                //// URLeft
+                                //nAline = UIData.nURLeft;
+                                //if (nAline < 0) nAline = 0;
+                                //if (nAline >= threadData.nProcessedNumberAlines) nAline = threadData.nProcessedNumberAlines - 1;
+                                //for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
+                                //    UIData.pfURLeft[0, nPoint] = UIData.pfURImage[nAline, nPoint];
+                                //// URTop
+                                //nPoint = UIData.nURTop;
+                                //if (nPoint < 0) nPoint = 0;
+                                //if (nPoint >= threadData.nProcessedAlineLength) nPoint = threadData.nProcessedAlineLength - 1;
+                                //for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
+                                //    UIData.pfURTop[0, nAline] = UIData.pfURImage[nAline, nPoint];
 
-                                            break;
-                                    }   // switch (nProcess2Type
+                                break;
+                        }   // switch (nProcess2Type
 
-                                    threadData.rwlsProcess1To2.ExitReadLock();
+                        threadData.strProcess2ThreadStatus = "done!";
+                    }
+                    else
+                    {
+                        bTroublemaker = true;
+                        threadData.strProcess2ThreadStatus = "problem!";
+                        threadData.mreProcess2Kill.Set();
+                        threadData.mreMainKill.Set();
+                    }
 
-                                    switch (nProcess2Type)
-                                    {
-                                        case 0:
-                                            threadData.strProcess2ThreadStatus = "...none...";
-                                            break;
-                                        case 1:
-                                            threadData.strProcess2ThreadStatus = "...intensity...";
-                                            break;
-                                        case 2:
-                                            threadData.strProcess2ThreadStatus = "...attenuation...";
-                                            break;
-                                        case 3:
-                                            threadData.strProcess2ThreadStatus = "...phase...";
-                                            break;
-                                        case 4:
-                                            threadData.strProcess2ThreadStatus = "...polarization...";
-                                            break;
-                                        case 5:
-                                            threadData.strProcess2ThreadStatus = "...angiography...";
-                                            break;
-                                        case 6:
-                                            threadData.strProcess2ThreadStatus = "...elastography...";
-                                            break;
-                                        case 7:
-                                            threadData.strProcess2ThreadStatus = "...spectroscopy...";
-                                            break;
-                                        case 8:
-                                            threadData.strProcess2ThreadStatus = "...spectral binning...";
+                }
 
-                                            // actual processing
-                                            Thread.Sleep(3000);
-
-                                            // copy data to upper right data structures
-                                            // URImage
-                                            for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
-                                                for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
-                                                    UIData.pfURImage[nAline, nPoint] = (float)(Math.Sqrt(threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQParallel[nAline * threadData.nRawAlineLength + nPoint] + threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint] * threadData.pfProcess2AIMAQPerpendicular[nAline * threadData.nRawAlineLength + nPoint]));
-                                            // URLeft
-                                            nAline = UIData.nURSpectralBinningLeft;
-                                            if (nAline < 0) nAline = 0;
-                                            if (nAline >= threadData.nProcessedNumberAlines) nAline = threadData.nProcessedNumberAlines - 1;
-                                            for (nPoint = 0; nPoint < threadData.nProcessedAlineLength; nPoint++)
-                                                UIData.pfURLeft[0, nPoint] = UIData.pfURImage[nAline, nPoint];
-                                            // URTop
-                                            nPoint = UIData.nURSpectralBinningTop;
-                                            if (nPoint < 0) nPoint = 0;
-                                            if (nPoint >= threadData.nProcessedAlineLength) nPoint = threadData.nProcessedAlineLength - 1;
-                                            for (nAline = 0; nAline < threadData.nProcessedNumberAlines; nAline++)
-                                                UIData.pfURTop[0, nAline] = UIData.pfURImage[nAline, nPoint];
-
-                                            break;
-                                    }   // switch (nProcess2Type
-
-                                    threadData.strProcess2ThreadStatus = "done!";
-                                }
-                                else
-                                {
-                                    bTroublemaker = true;
-                                    threadData.strProcess2ThreadStatus = "problem!";
-                                    threadData.mreProcess2Kill.Set();
-                                    threadData.mreMainKill.Set();
-                                }
-
-                            }
-
-                        }  // if (WaitHandle.WaitAny
+            }  // if (WaitHandle.WaitAny
             #endregion
 
             #region cleanup
-                        if (bTroublemaker)
-                        {
-                            threadData.mreProcess2Dead.Set();
-                        }
-                        else
-                        {  // if (bTroublemaker
-            #region cleanup
-                            threadData.strProcess2ThreadStatus = "Cleaning up...";
-                            // clean up code
-                            threadData.nProcess2Node = -1;
-                            // signal other threads
-                            threadData.mreProcess2Dead.Set();
-                            threadData.strProcess2ThreadStatus = "Done.";
-            #endregion
-                        }  // if (bTroublemaker
+            if (bTroublemaker)
+            {
+                threadData.mreProcess2Dead.Set();
+            }
+            else
+            {  // if (bTroublemaker
+                #region cleanup
+                threadData.strProcess2ThreadStatus = "Cleaning up...";
+                // clean up code
+                threadData.nProcess2Node = -1;
+                // signal other threads
+                threadData.mreProcess2Dead.Set();
+                threadData.strProcess2ThreadStatus = "Done.";
+                #endregion
+            }  // if (bTroublemaker
             #endregion
         }
 
+
         void CleanupThread()
         {
-            #region initializing
+#region initializing
             threadData.strCleanupThreadStatus = "Initializing...";
 
             // initialization
@@ -5132,9 +4886,9 @@ namespace nOCT
             // initialization complete
             threadData.mreCleanupReady.Set();
             threadData.strCleanupThreadStatus = "Ready!";
-            #endregion
+#endregion
 
-            #region main loop
+#region main loop
             threadData.strCleanupThreadStatus = "Set...";
             if (WaitHandle.WaitAny(pweStart) == 1)
             {
@@ -5182,25 +4936,25 @@ namespace nOCT
 
                 }  // while (WaitHandle.WaitAny
             }  // if (WaitHandle.WaitAny
-            #endregion
+#endregion
 
-            #region cleanup
+#region cleanup
             if (bTroublemaker)
             {
                 threadData.mreCleanupDead.Set();
             }
             else
             {  // if (bTroublemaker
-                #region cleanup
+#region cleanup
                 threadData.strCleanupThreadStatus = "Cleaning up...";
                 // clean up code
                 ;
                 // signal other threads
                 threadData.mreCleanupDead.Set();
                 threadData.strCleanupThreadStatus = "Done.";
-                #endregion
+#endregion
             }  // if (bTroublemaker
-            #endregion
+#endregion
 
         }
 
@@ -5208,25 +4962,18 @@ namespace nOCT
         private void graphULMain_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             Point p = cursorULMain.GetRelativePosition();
-            UIData.nULLeft = (int)(threadData.nRawNumberAlines * p.X);
-            UIData.nULTop = (int)(threadData.nRawAlineLength * (1 - p.Y));
+            UIData.nULLeft = (int)(threadData.n1NumberCalibrationLines * threadData.n1NumberInterferenceLinesPerCalibration * p.X);
+            UIData.nULTop = (int)(threadData.n1LineLength * (1 - p.Y));
         }
 
 
         private void graphURMain_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            Point p = e.GetPosition(this);
-            UIData.nURSpectralBinningLeft = (int)(((float)(p.X) - 1239.0) / 539.0 * (threadData.nProcessedNumberAlines - 1));
-            UIData.nURSpectralBinningTop = (int)(((float)(p.Y) - 298.0) / 474.0 * (threadData.nProcessedAlineLength - 1));
-            UIData.nURIntensityLeft = (int)(p.X);
-            UIData.nURIntensityTop = (int)(p.Y);
+            Point p = cursorURMain.GetRelativePosition();
+            UIData.nURLeft = (int)(threadData.n2NumberDepthProfilesPerSet * p.X);
+            UIData.nURTop = (int)(threadData.n2LineLength * (1 - p.Y));
         }
 
-
-        private void btnUpdateUL_Click(object sender, RoutedEventArgs e)
-        {
-            UIData.bULChange = true;
-        }
 
         private void btnCalibrationFileLoad_Click(object sender, RoutedEventArgs e)
         {
@@ -5300,6 +5047,8 @@ namespace nOCT
         {
             UIData.bDispersionClear = true;
         }
+
+
     }
 
 
@@ -5344,7 +5093,7 @@ namespace nOCT
             set { _fXXX = value; OnPropertyChanged(name_fXXX); }
         }   // public float fXXX
 
-        #endregion
+        #endregion templates
 
         #region UL
 
@@ -5402,35 +5151,23 @@ namespace nOCT
 
         #endregion left
 
-        #region alazar
-
-        public string name_fULAlazarMax = "fULAlazarMax";
-        private float _fULAlazarMax;
-        public float fULAlazarMax
-        {
-            get { return _fULAlazarMax; }
-            set { _fULAlazarMax = value; OnPropertyChanged(name_fULAlazarMax); }
-        }   // public float fULAlazarMax
-
-        public string name_fULAlazarMin = "fULAlazarMin";
-        private float _fULAlazarMin;
-        public float fULAlazarMin
-        {
-            get { return _fULAlazarMin; }
-            set { _fULAlazarMin = value; OnPropertyChanged(name_fULAlazarMin); }
-        }   // public float fULAlazarMin
-
-        public string name_nULAlazarChannelIndex = "nULAlazarChannelIndex";
-        private int _nULAlazarChannelIndex;
-        public int nULAlazarChannelIndex
-        {
-            get { return _nULAlazarChannelIndex; }
-            set { _nULAlazarChannelIndex = value; OnPropertyChanged(name_nULAlazarChannelIndex); }
-        }
-
-        #endregion alazar
-
         #region DAQ
+
+        public string name_nULDAQChannel = "nULDAQChannel";
+        private int _nULDAQChannel;
+        public int nULDAQChannel
+        {
+            get { return _nULDAQChannel; }
+            set { _nULDAQChannel = value; OnPropertyChanged(name_nULDAQChannel); }
+        }   // public int nULDAQChannel
+
+        public string name_fULDAQMax = "fULDAQMax";
+        private float _fULDAQMax;
+        public float fULDAQMax
+        {
+            get { return _fULDAQMax; }
+            set { _fULDAQMax = value; OnPropertyChanged(name_fULDAQMax); }
+        }   // public float fULDAQMax
 
         public string name_fULDAQMin = "fULDAQMin";
         private float _fULDAQMin;
@@ -5440,61 +5177,45 @@ namespace nOCT
             set { _fULDAQMin = value; OnPropertyChanged(name_fULDAQMin); }
         }   // public float fULDAQMin
 
-        public string name_fULDAQMax = "fULDAQMax";
-        private float _fULDAQMax;
-        public float fULDAQMax
-        {
-            get { return _fULDAQMax; }
-            set { _fULDAQMax = value; OnPropertyChanged(name_fULDAQMax); }
-        }   // public float dULDAQMax
-
         #endregion DAQ
 
-        #region IMAQ
+        #region raw data
 
-        public string name_nULIMAQCameraIndex = "nULIMAQCameraIndex";
-        private int _nULIMAQCameraIndex;
-        public int nULIMAQCameraIndex
+        public string name_bULRawDataShowCalibration = "bULRawDataShowCalibration";
+        private bool _bULRawDataShowCalibration;
+        public bool bULRawDataShowCalibration
         {
-            get { return _nULIMAQCameraIndex; }
-            set { _nULIMAQCameraIndex = value; OnPropertyChanged(name_nULIMAQCameraIndex); }
-        }   // public int nULIMAQCameraIndex
+            get { return _bULRawDataShowCalibration; }
+            set { _bULRawDataShowCalibration = value; OnPropertyChanged(name_bULRawDataShowCalibration); }
+        }   // public bool bULRawDataShowCalibration
 
-        public string name_fULIMAQMax = "fULIMAQMax";
-        private float _fULIMAQMax;
-        public float fULIMAQMax
+        public string name_fULRawDataMax = "fULRawDataMax";
+        private float _fULRawDataMax;
+        public float fULRawDataMax
         {
-            get { return _fULIMAQMax; }
-            set { _fULIMAQMax = value; OnPropertyChanged(name_fULIMAQMax); }
-        }   // public float fULIMAQMax
+            get { return _fULRawDataMax; }
+            set { _fULRawDataMax = value; OnPropertyChanged(name_fULRawDataMax); }
+        }   // public float fULRawDataMax
 
-        public string name_fULIMAQMin = "fULIMAQMin";
-        private float _fULIMAQMin;
-        public float fULIMAQMin
+        public string name_fULRawDataMin = "fULRawDataMin";
+        private float _fULRawDataMin;
+        public float fULRawDataMin
         {
-            get { return _fULIMAQMin; }
-            set { _fULIMAQMin = value; OnPropertyChanged(name_fULIMAQMin); }
-        }   // public float fULIMAQMin
+            get { return _fULRawDataMin; }
+            set { _fULRawDataMin = value; OnPropertyChanged(name_fULRawDataMin); }
+        }   // public float fULRawDataMin
 
-        #endregion IMAQ
+        #endregion raw data
 
         #region intensity
 
-        public string name_nULIntensityCamera = "nULIntensityCamera";
-        private int _nULIntensityCamera;
-        public int nULIntensityCamera
+        public string name_nULIntensityChooser = "nULIntensityChooser";
+        private int _nULIntensityChooser;
+        public int nULIntensityChooser
         {
-            get { return _nULIntensityCamera; }
-            set { _nULIntensityCamera = value; OnPropertyChanged(name_nULIntensityCamera); }
-        }   // public int nULIntensityCamera
-
-        public string name_nULIntensityLines = "nULIntensityLines";
-        private int _nULIntensityLines;
-        public int nULIntensityLines
-        {
-            get { return _nULIntensityLines; }
-            set { _nULIntensityLines = value; OnPropertyChanged(name_nULIntensityLines); }
-        }   // public int nULIntensityLines
+            get { return _nULIntensityChooser; }
+            set { _nULIntensityChooser = value; OnPropertyChanged(name_nULIntensityChooser); }
+        }   // public int nULIntensityChooser
 
         public string name_fULIntensityMax = "fULIntensityMax";
         private float _fULIntensityMax;
@@ -5530,6 +5251,10 @@ namespace nOCT
 
         #region UR
 
+        public bool bURChange = false;
+
+        #region general
+
         public string name_nURDisplayIndex = "nURDisplayIndex";
         private int _nURDisplayIndex;
         public int nURDisplayIndex
@@ -5538,49 +5263,97 @@ namespace nOCT
             set { _nURDisplayIndex = value; OnPropertyChanged(name_nURDisplayIndex); }
         }   // public int nURDisplayIndex
 
-        public string name_nURIntensityTop = "nURIntensityTop";
-        private int _nURIntensityTop;
-        public int nURIntensityTop
-        {
-            get { return _nURIntensityTop; }
-            set { _nURIntensityTop = value; OnPropertyChanged(name_nURIntensityTop); }
-        }   // public int nURIntensityTop
+        #endregion general
 
-        public string name_nURIntensityLeft = "nURIntensityLeft";
-        private int _nURIntensityLeft;
-        public int nURIntensityLeft
-        {
-            get { return _nURIntensityLeft; }
-            set { _nURIntensityLeft = value; OnPropertyChanged(name_nURIntensityLeft); }
-        }   // public int nURIntensityLeft
+        #region top
 
-        /* Begin: 20201210 editing by JL */
-        public string name_nURIntensityCUDA = "nURIntensityCUDA";
-        private int _nURIntensityCUDA;
-        public int nURIntensityCUDA
+        public string name_bURTopActive = "bURTopActive";
+        private bool _bURTopActive;
+        public bool bURTopActive
         {
-            get { return _nURIntensityCUDA; }
-            set { _nURIntensityCUDA = value; OnPropertyChanged(name_nURIntensityCUDA); }
-        }   // public int nURIntensityCUDA
-        /* End: 20201210 editing by JL */
+            get { return _bURTopActive; }
+            set { _bURTopActive = value; OnPropertyChanged(name_bURTopActive); }
+        }   // public bool bURTopActive
 
-        public string name_nURSpectralBinningTop = "nURSpectralBinningTop";
-        private int _nURSpectralBinningTop;
-        public int nURSpectralBinningTop
+        public string name_nURTop = "nURTop";
+        private int _nURTop;
+        public int nURTop
         {
-            get { return _nURSpectralBinningTop; }
-            set { _nURSpectralBinningTop = value; OnPropertyChanged(name_nURSpectralBinningTop); }
-        }   // public int nURSpectralBinningTop
+            get { return _nURTop; }
+            set { _nURTop = value; OnPropertyChanged(name_nURTop); }
+        }   // public int nURTop
 
-        public string name_nURSpectralBinningLeft = "nURSpectralBinningLeft";
-        private int _nURSpectralBinningLeft;
-        public int nURSpectralBinningLeft
+        #endregion top
+
+        #region left
+
+        public string name_bURLeftActive = "bbURLeftActive";
+        private bool _bURLeftActive;
+        public bool bURLeftActive
         {
-            get { return _nURSpectralBinningLeft; }
-            set { _nURSpectralBinningLeft = value; OnPropertyChanged(name_nURSpectralBinningLeft); }
-        }   // public int nURSpectralBinningLeft
+            get { return _bURLeftActive; }
+            set { _bURLeftActive = value; OnPropertyChanged(name_bURLeftActive); }
+        }   // public bool bURLeftActive
 
-        #endregion
+        public string name_nURLeft = "nURLeft";
+        private int _nURLeft;
+        public int nURLeft
+        {
+            get { return _nURLeft; }
+            set { _nURLeft = value; OnPropertyChanged(name_nURLeft); }
+        }   // public int nURLeft
+
+        #endregion left
+
+        #region main
+
+        public string name_bURMainActive = "bURMainActive";
+        private bool _bURMainActive;
+        public bool bURMainActive
+        {
+            get { return _bURMainActive; }
+            set { _bURMainActive = value; OnPropertyChanged(name_bURMainActive); }
+        }   // public bool bURMainActive
+
+        #endregion main
+
+        #region intensity
+
+        public string name_nURIntensityCamera = "nURIntensityCamera";
+        private int _nURIntensityCamera;
+        public int nURIntensityCamera
+        {
+            get { return _nURIntensityCamera; }
+            set { _nURIntensityCamera = value; OnPropertyChanged(name_nURIntensityCamera); }
+        }   // public int nURIntensityCamera
+
+        public string name_nURIntensityLines = "nURIntensityLines";
+        private int _nURIntensityLines;
+        public int nURIntensityLines
+        {
+            get { return _nURIntensityLines; }
+            set { _nURIntensityLines = value; OnPropertyChanged(name_nURIntensityLines); }
+        }   // public int nURIntensityLines
+
+        public string name_fURIntensityMax = "fURIntensityMax";
+        private float _fURIntensityMax;
+        public float fURIntensityMax
+        {
+            get { return _fURIntensityMax; }
+            set { _fURIntensityMax = value; OnPropertyChanged(name_fURIntensityMax); }
+        }   // public float fURIntensityMax
+
+        public string name_fURIntensityMin = "fURIntensityMin";
+        private float _fURIntensityMin;
+        public float fURIntensityMin
+        {
+            get { return _fURIntensityMin; }
+            set { _fURIntensityMin = value; OnPropertyChanged(name_fURIntensityMin); }
+        }   // public float fURIntensityMin
+
+        #endregion intensity
+
+        #endregion UR
 
         #region LL
 
@@ -5728,13 +5501,13 @@ namespace nOCT
             set { _nLLLinkedListLength = value; OnPropertyChanged(name_nLLLinkedListLength); }
         }   // public int nLLLinkedListLength
 
-        public string name_nLLCUDADevice = "nLLCUDADevice";
-        private int _nLLCUDADevice;
-        public int nLLCUDADevice
+        public string name_nComputationDevice = "nComputationDevice";
+        private int _nComputationDevice;
+        public int nComputationDevice
         {
-            get { return _nLLCUDADevice; }
-            set { _nLLCUDADevice = value; OnPropertyChanged(name_nLLCUDADevice); }
-        }   // public int nLLCUDADevice
+            get { return _nComputationDevice; }
+            set { _nComputationDevice = value; OnPropertyChanged(name_nComputationDevice); }
+        }   // public int nComputationDevice
 
         public string name_strLLFileDirectory = "strLLFileDirectory";
         private string _strLLFileDirectory;
@@ -5832,21 +5605,30 @@ namespace nOCT
             set { _nLLDwellSlow = value; OnPropertyChanged(name_nLLDwellSlow); }
         }   // public int nLLDwellSlow
 
-        public string name_nLLRoundingFast = "nLLRoundingFast";
-        private int _nLLRoundingFast;
-        public int nLLRoundingFast
+        public string name_nLLRounding = "nLLRounding";
+        private int _nLLRounding;
+        public int nLLRounding
         {
-            get { return _nLLRoundingFast; }
-            set { _nLLRoundingFast = value; OnPropertyChanged(name_nLLRoundingFast); }
-        }   // public int nLLRoundingFast
+            get { return _nLLRounding; }
+            set { _nLLRounding = value; OnPropertyChanged(name_nLLRounding); }
+        }   // public int nLLRounding
 
-        public string name_nLLRoundingSlow = "nLLRoundingSlow";
-        private int _nLLRoundingSlow;
-        public int nLLRoundingSlow
+        public string name_fLLPolModLow = "fLLPolModLow";
+        private float _fLLPolModLow;
+        public float fLLPolModLow
         {
-            get { return _nLLRoundingSlow; }
-            set { _nLLRoundingSlow = value; OnPropertyChanged(name_nLLRoundingSlow); }
-        }   // public int nLLRoundingSlow
+            get { return _fLLPolModLow; }
+            set { _fLLPolModLow = value; OnPropertyChanged(name_fLLPolModLow); }
+        }   // public float fLLPolModLow
+
+        public string name_fLLPolModHigh = "fLLPolModHigh";
+        private float _fLLPolModHigh;
+        public float fLLPolModHigh
+        {
+            get { return _fLLPolModHigh; }
+            set { _fLLPolModHigh = value; OnPropertyChanged(name_fLLPolModHigh); }
+        }   // public float fLLPolModHigh
+
 
         #endregion
 
@@ -5943,6 +5725,82 @@ namespace nOCT
         }   // public bool bLRDiagnostics
 
         #endregion  // diagnostics tab
+
+        #region output tab
+
+        public string name_bLROutput = "bLROutput";
+        private bool _bLROutput;
+        public bool bLROutput
+        {
+            get { return _bLROutput; }
+            set { _bLROutput = value; OnPropertyChanged(name_bLROutput); }
+        }   // public bool bLROutput
+
+        public string name_nOutputDigitalClockType = "nOutputDigitalClockType";
+        private int _nOutputDigitalClockType;
+        public int nOutputDigitalClockType
+        {
+            get { return _nOutputDigitalClockType; }
+            set { _nOutputDigitalClockType = value; OnPropertyChanged(name_nOutputDigitalClockType); }
+        }   // public int nOutputDigitalClockType
+
+        public string name_nOutputP0L0Type = "nOutputP0L0Type";
+        private int _nOutputP0L0Type;
+        public int nOutputP0L0Type
+        {
+            get { return _nOutputP0L0Type; }
+            set { _nOutputP0L0Type = value; OnPropertyChanged(name_nOutputP0L0Type); }
+        }   // public int nOutputP0L0Type
+
+        public string name_nOutputP0L1Type = "nOutputP0L1Type";
+        private int _nOutputP0L1Type;
+        public int nOutputP0L1Type
+        {
+            get { return _nOutputP0L1Type; }
+            set { _nOutputP0L1Type = value; OnPropertyChanged(name_nOutputP0L1Type); }
+        }   // public int nOutputP0L1Type
+
+        public string name_nOutputP0L2Type = "nOutputP0L2Type";
+        private int _nOutputP0L2Type;
+        public int nOutputP0L2Type
+        {
+            get { return _nOutputP0L2Type; }
+            set { _nOutputP0L2Type = value; OnPropertyChanged(name_nOutputP0L2Type); }
+        }   // public int nOutputP0L2Type
+
+        public string name_nOutputAnalogClockType = "nOutputAnalogClockType";
+        private int _nOutputAnalogClockType;
+        public int nOutputAnalogClockType
+        {
+            get { return _nOutputAnalogClockType; }
+            set { _nOutputAnalogClockType = value; OnPropertyChanged(name_nOutputAnalogClockType); }
+        }   // public int nOutputAnalogClockType
+
+        public string name_nOutputAO0Type = "nOutputAO0Type";
+        private int _nOutputAO0Type;
+        public int nOutputAO0Type
+        {
+            get { return _nOutputAO0Type; }
+            set { _nOutputAO0Type = value; OnPropertyChanged(name_nOutputAO0Type); }
+        }   // public int nOutputAO0Type
+
+        public string name_nOutputAO1Type = "nOutputAO1Type";
+        private int _nOutputAO1Type;
+        public int nOutputAO1Type
+        {
+            get { return _nOutputAO1Type; }
+            set { _nOutputAO1Type = value; OnPropertyChanged(name_nOutputAO1Type); }
+        }   // public int nOutputAO1Type
+
+        public string name_nOutputAO2Type = "nOutputAO2Type";
+        private int _nOutputAO2Type;
+        public int nOutputAO2Type
+        {
+            get { return _nOutputAO2Type; }
+            set { _nOutputAO2Type = value; OnPropertyChanged(name_nOutputAO2Type); }
+        }   // public int nOutputAO2Type
+
+        #endregion output tab
 
         #region processing tab
 
@@ -6141,7 +5999,6 @@ namespace nOCT
         public float[,] pfULLeft = null;
         public float[,] pfULTop = null;
         public float[,] pfULImage = null;
-        public byte[,] pbULImage = null;
 
         public float[,] pfURLeft = null;
         public float[,] pfURTop = null;
@@ -6291,45 +6148,45 @@ namespace nOCT
 
     public class CThreadData
     {
-        public int nRawNumberAlines;
-        public int nRawAlineLength;
-        public int nProcessedNumberAlines;
-        public int nProcessedAlineLength;
+//        public int nRawNumberAlines;
+//        public int nRawAlineLength;
+//        public int nProcessedNumberAlines;
+//        public int nProcessedAlineLength;
 
         public bool bRecord = false;
 
         #region MainThread
-                public Thread threadMain;
-                public ManualResetEvent mreMainReady;
-                public ManualResetEvent mreMainRun;
-                public ManualResetEvent mreMainKill;
-                public ManualResetEvent mreMainDead;
-                public string strMainThreadStatus = "XXX";
+        public Thread threadMain;
+        public ManualResetEvent mreMainReady;
+        public ManualResetEvent mreMainRun;
+        public ManualResetEvent mreMainKill;
+        public ManualResetEvent mreMainDead;
+        public string strMainThreadStatus = "XXX";
         #endregion
 
         #region OutputThread
-                public Thread threadOutput;
-                public ManualResetEvent mreOutputReady;
-                public ManualResetEvent mreOutputRun;
-                public ManualResetEvent mreOutputKill;
-                public ManualResetEvent mreOutputDead;
-                public ManualResetEvent mreOutputUpdate;
-                public string strOutputThreadStatus = "XXX";
+        public Thread threadOutput;
+        public ManualResetEvent mreOutputReady;
+        public ManualResetEvent mreOutputRun;
+        public ManualResetEvent mreOutputKill;
+        public ManualResetEvent mreOutputDead;
+        public ManualResetEvent mreOutputUpdate;
+        public string strOutputThreadStatus = "XXX";
         #endregion
 
         #region AcquireThread
-                public Thread threadAcquire;
-                public ManualResetEvent mreAcquireReady;
-                public ManualResetEvent mreAcquireRun;
-                public ManualResetEvent mreAcquireKill;
-                public ManualResetEvent mreAcquireDead;
-                public SemaphoreSlim ssAcquireComplete;
-                public string strAcquireThreadStatus = "XXX";
-                /* Begin: 20201208 editing JL */
-                public int nAcquisitionNodeID;
-                public int nFileNumber = 100001; 
-                public int nFramePosition = 1;
-                /* End: 20201208 editing JL */
+        public Thread threadAcquire;
+        public ManualResetEvent mreAcquireReady;
+        public ManualResetEvent mreAcquireRun;
+        public ManualResetEvent mreAcquireKill;
+        public ManualResetEvent mreAcquireDead;
+        public SemaphoreSlim ssAcquireComplete;
+        public string strAcquireThreadStatus = "XXX";
+        /* Begin: 20201208 editing JL */
+        public int nAcquisitionNodeID;
+        public int nFileNumber = 100001; 
+        public int nFramePosition = 1;
+        /* End: 20201208 editing JL */
         #endregion
 
         public int nSystemActual;
@@ -6337,85 +6194,102 @@ namespace nOCT
         public ManualResetEvent mreAcquireNodeReady;
 
         #region AcquireAlazarThread
-                public Thread threadAcquireAlazar;
-                public ManualResetEvent mreAcquireAlazarReady;
-                public ManualResetEvent mreAcquireAlazarRun;
-                public ManualResetEvent mreAcquireAlazarKill;
-                public ManualResetEvent mreAcquireAlazarDead;
-                public AutoResetEvent areAcquireAlazarGo;
-                public AutoResetEvent areAcquireAlazarComplete;
-                public string strAcquireAlazarThreadStatus = "XAla";
+        public Thread threadAcquireAlazar;
+        public ManualResetEvent mreAcquireAlazarReady;
+        public ManualResetEvent mreAcquireAlazarRun;
+        public ManualResetEvent mreAcquireAlazarKill;
+        public ManualResetEvent mreAcquireAlazarDead;
+        public AutoResetEvent areAcquireAlazarGo;
+        public AutoResetEvent areAcquireAlazarComplete;
+        public string strAcquireAlazarThreadStatus = "XAla";
         #endregion
 
         #region AcquireDAQThread
-                public Thread threadAcquireDAQ;
-                public ManualResetEvent mreAcquireDAQReady;
-                public ManualResetEvent mreAcquireDAQRun;
-                public ManualResetEvent mreAcquireDAQKill;
-                public ManualResetEvent mreAcquireDAQDead;
-                public AutoResetEvent areAcquireDAQGo;
-                public AutoResetEvent areAcquireDAQComplete;
-                public string strAcquireDAQThreadStatus = "XDAQ";
+        public Thread threadAcquireDAQ;
+        public ManualResetEvent mreAcquireDAQReady;
+        public ManualResetEvent mreAcquireDAQRun;
+        public ManualResetEvent mreAcquireDAQKill;
+        public ManualResetEvent mreAcquireDAQDead;
+        public AutoResetEvent areAcquireDAQGo;
+        public AutoResetEvent areAcquireDAQComplete;
+        public string strAcquireDAQThreadStatus = "XDAQ";
         #endregion
 
         #region AcquireIMAQThread
-                public Thread threadAcquireIMAQ;
-                public ManualResetEvent mreAcquireIMAQReady;
-                public ManualResetEvent mreAcquireIMAQRun;
-                public ManualResetEvent mreAcquireIMAQKill;
-                public ManualResetEvent mreAcquireIMAQDead;
-                public AutoResetEvent areAcquireIMAQGo;
-                public AutoResetEvent areAcquireIMAQComplete;
-                public string strAcquireIMAQThreadStatus = "XIMQ";
+        public Thread threadAcquireIMAQ;
+        public ManualResetEvent mreAcquireIMAQReady;
+        public ManualResetEvent mreAcquireIMAQRun;
+        public ManualResetEvent mreAcquireIMAQKill;
+        public ManualResetEvent mreAcquireIMAQDead;
+        public AutoResetEvent areAcquireIMAQGo;
+        public AutoResetEvent areAcquireIMAQComplete;
+        public string strAcquireIMAQThreadStatus = "XIMQ";
         #endregion
 
         #region SaveThread
-                public Thread threadSave;
-                public ManualResetEvent mreSaveReady;
-                public ManualResetEvent mreSaveRun;
-                public ManualResetEvent mreSaveKill;
-                public ManualResetEvent mreSaveDead;
-                public SemaphoreSlim ssSaveAction;
-                public string strSaveThreadStatus = "XXX";
-                public int nSaveNodeID; 
+        public Thread threadSave;
+        public ManualResetEvent mreSaveReady;
+        public ManualResetEvent mreSaveRun;
+        public ManualResetEvent mreSaveKill;
+        public ManualResetEvent mreSaveDead;
+        public SemaphoreSlim ssSaveAction;
+        public string strSaveThreadStatus = "XXX";
+        public int nSaveNodeID; 
         #endregion
 
         #region ProcessThread
-                public Thread threadProcess;
-                public ManualResetEvent mreProcessReady;
-                public ManualResetEvent mreProcessRun;
-                public ManualResetEvent mreProcessKill;
-                public ManualResetEvent mreProcessDead;
-                public SemaphoreSlim ssProcessAction;
-                public string strProcessThreadStatus = "XXX";
+        public Thread threadProcess;
+        public ManualResetEvent mreProcessReady;
+        public ManualResetEvent mreProcessRun;
+        public ManualResetEvent mreProcessKill;
+        public ManualResetEvent mreProcessDead;
+        public SemaphoreSlim ssProcessAction;
+        public string strProcessThreadStatus = "XXX";
         #endregion
 
-        public ReaderWriterLockSlim rwlsProcessTo1;
+        // new process to process1 structures
+        public ReaderWriterLockSlim rwls1;
+        public int n1NumberCalibrationLines;
+        public int n1NumberInterferenceLinesPerCalibration;
+        public int n1LineLength;
+        public float[] pf1Calibration;
+        public float[] pf1Interference;
+        public float[] pf1DAQ;
+
+        // old structures
+//        public ReaderWriterLockSlim rwlsProcessTo1;
         public int nProcess1WriteTimeout;
         public int nProcess1ProcessingType;
-        public UInt16[] pnProcess1Alazar;
-        public UInt16[] pnProcess1AlazarOCT;
-        public UInt16[] pnProcess1AlazarMZI;
-        public float[] pfProcess1Alazar;
-        public float[] pfProcess1AlazarOCT;
-        public float[] pfProcess1AlazarMZI;
-        public float[] pfProcess1DAQ;
-        public float[] pfProcess1IMAQParallel;
-        public float[] pfProcess1IMAQPerpendicular;
+//        public UInt16[] pnProcess1Alazar;
+//        public float[] pfProcess1DAQ;
+//        public float[] pfProcess1IMAQParallel;
+//        public float[] pfProcess1IMAQPerpendicular;
         public int nProcessNode = -1;
         public int nProcess1Node = -1;
-        public int nProcessTo1Data = 0;
+//        public int nProcessTo1Data = 0;
 
         #region Process1Thread
-                public Thread threadProcess1;
-                public ManualResetEvent mreProcess1Ready;
-                public ManualResetEvent mreProcess1Run;
-                public ManualResetEvent mreProcess1Kill;
-                public ManualResetEvent mreProcess1Dead;
-                public ManualResetEvent mreProcess1Action;
-                public string strProcess1ThreadStatus = "XXX";
+        public Thread threadProcess1;
+        public ManualResetEvent mreProcess1Ready;
+        public ManualResetEvent mreProcess1Run;
+        public ManualResetEvent mreProcess1Kill;
+        public ManualResetEvent mreProcess1Dead;
+        public ManualResetEvent mreProcess1Action;
+        public string strProcess1ThreadStatus = "XXX";
         #endregion
 
+        // new process1 to process2 structures;
+        public ReaderWriterLockSlim rwls2;
+        public int n2NumberSets;
+        public int n2NumberDepthProfilesPerSet;
+        public int n2LineLength;
+        public float[] pf2Real;
+        public float[] pf2Imag;
+        public float[] pf2DAQ;
+        public float[] pf2Calibration;
+        public float[] pf2Interference;
+
+        // old strucures
         public int nProcess2Type;
 
         public ReaderWriterLockSlim rwlsProcess1To2;
@@ -6436,123 +6310,121 @@ namespace nOCT
         public int nProcess1To2AData = 0;
 
         #region Process2Thread
-                public Thread threadProcess2;
-                public ManualResetEvent mreProcess2Ready;
-                public ManualResetEvent mreProcess2Run;
-                public ManualResetEvent mreProcess2Kill;
-                public ManualResetEvent mreProcess2Dead;
-                public ManualResetEvent mreProcess2Action;
-                public string strProcess2ThreadStatus = "XXX";
+        public Thread threadProcess2;
+        public ManualResetEvent mreProcess2Ready;
+        public ManualResetEvent mreProcess2Run;
+        public ManualResetEvent mreProcess2Kill;
+        public ManualResetEvent mreProcess2Dead;
+        public ManualResetEvent mreProcess2Action;
+        public string strProcess2ThreadStatus = "XXX";
         #endregion
 
-        #region CleanupThread
-                public Thread threadCleanup;
-                public ManualResetEvent mreCleanupReady;
-                public ManualResetEvent mreCleanupRun;
-                public ManualResetEvent mreCleanupKill;
-                public ManualResetEvent mreCleanupDead;
-                public ManualResetEvent mreCleanupAction;
-                public string strCleanupThreadStatus = "XXX";
-        #endregion
+#region CleanupThread
+        public Thread threadCleanup;
+        public ManualResetEvent mreCleanupReady;
+        public ManualResetEvent mreCleanupRun;
+        public ManualResetEvent mreCleanupKill;
+        public ManualResetEvent mreCleanupDead;
+        public ManualResetEvent mreCleanupAction;
+        public string strCleanupThreadStatus = "XXX";
+#endregion
 
 
         public void Initialize()
         {
-            #region MainThread
-                        mreMainReady = new ManualResetEvent(false);
-                        mreMainRun = new ManualResetEvent(false);
-                        mreMainKill = new ManualResetEvent(false);
-                        mreMainDead = new ManualResetEvent(false);
-            #endregion
+#region MainThread
+            mreMainReady = new ManualResetEvent(false);
+            mreMainRun = new ManualResetEvent(false);
+            mreMainKill = new ManualResetEvent(false);
+            mreMainDead = new ManualResetEvent(false);
+#endregion
 
-            #region OutputThread
-                        mreOutputReady = new ManualResetEvent(false);
-                        mreOutputRun = new ManualResetEvent(false);
-                        mreOutputKill = new ManualResetEvent(false);
-                        mreOutputDead = new ManualResetEvent(false);
-                        mreOutputUpdate = new ManualResetEvent(false);
-            #endregion
+#region OutputThread
+            mreOutputReady = new ManualResetEvent(false);
+            mreOutputRun = new ManualResetEvent(false);
+            mreOutputKill = new ManualResetEvent(false);
+            mreOutputDead = new ManualResetEvent(false);
+            mreOutputUpdate = new ManualResetEvent(false);
+#endregion
 
-            #region AcquireThread
-                        mreAcquireReady = new ManualResetEvent(false);
-                        mreAcquireRun = new ManualResetEvent(false);
-                        mreAcquireKill = new ManualResetEvent(false);
-                        mreAcquireDead = new ManualResetEvent(false);
-                        ssAcquireComplete = new SemaphoreSlim(0);
-            #endregion
+#region AcquireThread
+            mreAcquireReady = new ManualResetEvent(false);
+            mreAcquireRun = new ManualResetEvent(false);
+            mreAcquireKill = new ManualResetEvent(false);
+            mreAcquireDead = new ManualResetEvent(false);
+            ssAcquireComplete = new SemaphoreSlim(0);
+#endregion
 
             mreAcquireNodeReady = new ManualResetEvent(false);
 
-            #region AcquireAlazarThread
-                        mreAcquireAlazarReady = new ManualResetEvent(false);
-                        mreAcquireAlazarRun = new ManualResetEvent(false);
-                        mreAcquireAlazarKill = new ManualResetEvent(false);
-                        mreAcquireAlazarDead = new ManualResetEvent(false);
-                        areAcquireAlazarGo = new AutoResetEvent(false);
-                        areAcquireAlazarComplete = new AutoResetEvent(false);
-            #endregion
+#region AcquireAlazarThread
+            mreAcquireAlazarReady = new ManualResetEvent(false);
+            mreAcquireAlazarRun = new ManualResetEvent(false);
+            mreAcquireAlazarKill = new ManualResetEvent(false);
+            mreAcquireAlazarDead = new ManualResetEvent(false);
+            areAcquireAlazarGo = new AutoResetEvent(false);
+            areAcquireAlazarComplete = new AutoResetEvent(false);
+#endregion
 
-            #region AcquireDAQThread
-                        mreAcquireDAQReady = new ManualResetEvent(false);
-                        mreAcquireDAQRun = new ManualResetEvent(false);
-                        mreAcquireDAQKill = new ManualResetEvent(false);
-                        mreAcquireDAQDead = new ManualResetEvent(false);
-                        areAcquireDAQGo = new AutoResetEvent(false);
-                        areAcquireDAQComplete = new AutoResetEvent(false);
-            #endregion
+#region AcquireDAQThread
+            mreAcquireDAQReady = new ManualResetEvent(false);
+            mreAcquireDAQRun = new ManualResetEvent(false);
+            mreAcquireDAQKill = new ManualResetEvent(false);
+            mreAcquireDAQDead = new ManualResetEvent(false);
+            areAcquireDAQGo = new AutoResetEvent(false);
+            areAcquireDAQComplete = new AutoResetEvent(false);
+#endregion
 
-            #region AcquireIMAQThread
-                        mreAcquireIMAQReady = new ManualResetEvent(false);
-                        mreAcquireIMAQRun = new ManualResetEvent(false);
-                        mreAcquireIMAQKill = new ManualResetEvent(false);
-                        mreAcquireIMAQDead = new ManualResetEvent(false);
-                        areAcquireIMAQGo = new AutoResetEvent(false);
-                        areAcquireIMAQComplete = new AutoResetEvent(false);
-            #endregion
+#region AcquireIMAQThread
+            mreAcquireIMAQReady = new ManualResetEvent(false);
+            mreAcquireIMAQRun = new ManualResetEvent(false);
+            mreAcquireIMAQKill = new ManualResetEvent(false);
+            mreAcquireIMAQDead = new ManualResetEvent(false);
+            areAcquireIMAQGo = new AutoResetEvent(false);
+            areAcquireIMAQComplete = new AutoResetEvent(false);
+#endregion
 
-            #region SaveThead
-                        mreSaveReady = new ManualResetEvent(false);
-                        mreSaveRun = new ManualResetEvent(false);
-                        mreSaveKill = new ManualResetEvent(false);
-                        mreSaveDead = new ManualResetEvent(false);
-                        ssSaveAction = new SemaphoreSlim(0);
-            #endregion
+#region SaveThead
+            mreSaveReady = new ManualResetEvent(false);
+            mreSaveRun = new ManualResetEvent(false);
+            mreSaveKill = new ManualResetEvent(false);
+            mreSaveDead = new ManualResetEvent(false);
+            ssSaveAction = new SemaphoreSlim(0);
+#endregion
 
-            #region ProcessThread
-                        mreProcessReady = new ManualResetEvent(false);
-                        mreProcessRun = new ManualResetEvent(false);
-                        mreProcessKill = new ManualResetEvent(false);
-                        mreProcessDead = new ManualResetEvent(false);
-                        ssProcessAction = new SemaphoreSlim(0);
-            #endregion
+#region ProcessThread
+            mreProcessReady = new ManualResetEvent(false);
+            mreProcessRun = new ManualResetEvent(false);
+            mreProcessKill = new ManualResetEvent(false);
+            mreProcessDead = new ManualResetEvent(false);
+            ssProcessAction = new SemaphoreSlim(0);
+#endregion
 
-            rwlsProcessTo1 = new ReaderWriterLockSlim();
-
-            #region Process1Thread
-                        mreProcess1Ready = new ManualResetEvent(false);
-                        mreProcess1Run = new ManualResetEvent(false);
-                        mreProcess1Kill = new ManualResetEvent(false);
-                        mreProcess1Dead = new ManualResetEvent(false);
-                        mreProcess1Action = new ManualResetEvent(true);
-            #endregion
+#region Process1Thread
+            mreProcess1Ready = new ManualResetEvent(false);
+            mreProcess1Run = new ManualResetEvent(false);
+            mreProcess1Kill = new ManualResetEvent(false);
+            mreProcess1Dead = new ManualResetEvent(false);
+            mreProcess1Action = new ManualResetEvent(true);
+#endregion
 
             rwlsProcess1To2 = new ReaderWriterLockSlim();
 
-            #region Process2Thread
-                        mreProcess2Ready = new ManualResetEvent(false);
-                        mreProcess2Run = new ManualResetEvent(false);
-                        mreProcess2Kill = new ManualResetEvent(false);
-                        mreProcess2Dead = new ManualResetEvent(false);
-                        mreProcess2Action = new ManualResetEvent(true);
-            #endregion
+#region Process2Thread
+            mreProcess2Ready = new ManualResetEvent(false);
+            mreProcess2Run = new ManualResetEvent(false);
+            mreProcess2Kill = new ManualResetEvent(false);
+            mreProcess2Dead = new ManualResetEvent(false);
+            mreProcess2Action = new ManualResetEvent(true);
+#endregion
 
-            #region CleanupThead
-                        mreCleanupReady = new ManualResetEvent(false);
-                        mreCleanupRun = new ManualResetEvent(false);
-                        mreCleanupKill = new ManualResetEvent(false);
-                        mreCleanupDead = new ManualResetEvent(false);
-                        mreCleanupAction = new ManualResetEvent(false);
-            #endregion
+#region CleanupThead
+            mreCleanupReady = new ManualResetEvent(false);
+            mreCleanupRun = new ManualResetEvent(false);
+            mreCleanupKill = new ManualResetEvent(false);
+            mreCleanupDead = new ManualResetEvent(false);
+            mreCleanupAction = new ManualResetEvent(false);
+#endregion
 
         }   // public void Initialize
 
@@ -6566,7 +6438,7 @@ namespace nOCT
 
     public class nOCTcudaWrapper : IDisposable
     {
-        public const string gstrCUDAdll = "C:\\Users\\ONI Lab\\Desktop\\nOCTcuda\\x64\\Release\\nOCTcuda.dll";
+        public const string gstrCUDAdll = "C:\\Users\\hylep\\Desktop\\nOCTcuda\\x64\\Release\\nOCTcuda.dll";
 
         bool disposed = false;
         [SuppressUnmanagedCodeSecurityAttribute()]
